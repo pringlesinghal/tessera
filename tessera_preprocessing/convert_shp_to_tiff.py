@@ -261,8 +261,7 @@ def main():
     Main function to run the conversion process.
     """
     # Input shapefile path
-    shp_path = '/home/zf281/rds/rds-airr-p3-w8D3JcRiKZQ/cambridge/cambridge_shp/cambridge.shp'
-
+    shp_path = "/home/pringle/sentineldownloader/tessera/shapefiles/reprojected_india.shp"
     # Call the conversion function
     try:
         tiff_path, hull_tiff_path = shp_to_tiff(shp_path, pixel_size=10, force_crs=None)

@@ -12,7 +12,7 @@ set -u
 #######################################
 
 # === Basic Configuration ===
-BASE_DIR="/absolute/path/to/your/data_dir"
+BASE_DIR="/home/pringle/sentineldownloader/tessera/timeseries/r28672_c65536"
 OUT_DIR="${BASE_DIR}/data_processed"
 DOWNSAMPLE_RATE=1
 

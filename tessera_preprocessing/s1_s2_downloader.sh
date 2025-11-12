@@ -12,24 +12,24 @@ set -u
 #######################################
 
 # === Basic Configuration ===
-INPUT_TIFF="/absolute/path/to/your/data_dir/roi.tiff"
-OUT_DIR="/absolute/path/to/your/data_dir"
+INPUT_TIFF="/home/pringle/sentineldownloader/tessera/shapefiles/india_tiles/tiles/tile_r28672_c65536.tif"
+OUT_DIR="/home/pringle/sentineldownloader/tessera/timeseries/r28672_c65536"
 
-export TEMP_DIR="/absolute/path/to/your/temp_dir"     # Temporary file directory
+export TEMP_DIR="/home/pringle/sentineldownloader/tessera/temp"     # Temporary file directory
 
 mkdir -p "$OUT_DIR"
 
 # Python environment path
-PYTHON_ENV="/absolute/path/to/your/python_env/bin/python"
+PYTHON_ENV="/home/pringle/sentineldownloader/tessera/.venv/bin/python"
 
 # === Sentinel-1 & Sentinel-2 Processing Configuration ===
-YEAR=2022 # Range [2017-2024]
+YEAR=2024 # Range [2017-2024]
 RESOLUTION=10.0  # Resolution of the input TIFF, also the output resolution (meters)
 
 # === Sentinel-1 Configuration ===
 S1_ENABLED=true                    # Enable S1 processing
-S1_PARTITIONS=12                   # Number of S1 parallel partitions
-S1_TOTAL_WORKERS=12                # Total number of S1 Dask workers
+S1_PARTITIONS=2                   # Number of S1 parallel partitions
+S1_TOTAL_WORKERS=2                # Total number of S1 Dask workers
 S1_WORKER_MEMORY=4                 # Memory per S1 worker (GB)
 S1_CHUNKSIZE=1024                  # S1 stackstac chunk size
 S1_ORBIT_STATE="both"              # Orbit state: ascending/descending/both
@@ -39,11 +39,11 @@ S1_OVERWRITE=true                  # Overwrite existing S1 files
 
 # === Sentinel-2 Configuration ===
 S2_ENABLED=true                    # Enable S2 processing
-S2_PARTITIONS=24                   # Number of S2 parallel partitions
-S2_TOTAL_WORKERS=24                # Total number of S2 Dask workers
+S2_PARTITIONS=2                   # Number of S2 parallel partitions
+S2_TOTAL_WORKERS=2                # Total number of S2 Dask workers
 S2_WORKER_MEMORY=4                 # Memory per S2 worker (GB)
 S2_CHUNKSIZE=1024                  # S2 stackstac chunk size
-S2_MAX_CLOUD=90                    # Maximum cloud coverage for S2 (%)
+S2_MAX_CLOUD=100                    # Maximum cloud coverage for S2 (%)
 S2_RESOLUTION=$RESOLUTION          # S2 output resolution (meters)
 S2_MIN_COVERAGE=10.0               # Minimum valid pixel coverage for S2 (%)
 S2_OVERWRITE=true                  # Overwrite existing S2 files
