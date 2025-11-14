@@ -19,8 +19,8 @@ if [[ $# -lt 2 ]]; then
 fi
 
 # === Basic Configuration ===
-INPUT_TIFF="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/shapefiles/india_tiles/tiles/tile_${TILE_ID}.tif"
-OUT_DIR="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/time_series/${YEAR}/${TILE_ID}"
+INPUT_TIFF="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/shapefiles/india_tiles/tiles_utm/tile_${TILE_ID}.tif"
+OUT_DIR="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/time_series_utm/${YEAR}/${TILE_ID}"
 
 export TEMP_DIR="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/temp"     # Temporary file directory
 

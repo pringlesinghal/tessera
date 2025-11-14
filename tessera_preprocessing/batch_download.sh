@@ -14,9 +14,9 @@ set -euo pipefail
 # submitted 0, 1000, 2000
 
 # File containing the tile IDs
-TILE_LIST="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/shapefiles/india_tiles/tiles/tile_list.txt"
-COMPLETED_FILE="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/shapefiles/india_tiles/tiles/completed_tiles.txt"
-COMPLETED_UPLOAD_FILE="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/shapefiles/india_tiles/tiles/completed_upload_tiles.txt"
+TILE_LIST="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/shapefiles/india_tiles/tiles_utm/tile_list.txt"
+COMPLETED_FILE="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/shapefiles/india_tiles/tiles_utm/completed_tiles.txt"
+COMPLETED_UPLOAD_FILE="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/shapefiles/india_tiles/tiles_utm/completed_upload_tiles.txt"
 
 # Change to preprocessing directory
 cd /scratch/groups/dlobell/psinghal/sentineldownloader/tessera/tessera_preprocessing
@@ -40,9 +40,9 @@ echo "Saved completed tile $TILE_ID to $COMPLETED_FILE"
 
 
 export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.config/gcloud/application_default_credentials.json"
-GCS_BUCKET="gs://sidd_rajasthan/psinghal/time_series"
+GCS_BUCKET="gs://sidd_rajasthan/psinghal/time_series_utm"
 BASE_DIR="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera"
-TIMESERIES_DIR="${BASE_DIR}/time_series"
+TIMESERIES_DIR="${BASE_DIR}/time_series_utm"
 
 echo "Uploading data for $TILE_ID to $GCS_BUCKET"
 UPLOAD_SUCCESS=true
@@ -53,7 +53,7 @@ for YEAR in {2024..2016..-1}; do
 
     if [ -d "$SRC_PATH" ]; then
         echo "Uploading $SRC_PATH → $DEST_PATH"
-        if gsutil -m cp -r "$SRC_PATH" "$DEST_PATH"; then
+        if gsutil cp -r "$SRC_PATH" "$DEST_PATH"; then
             echo "Upload successful: $SRC_PATH"
             rm -rf "$SRC_PATH"
             echo "Deleted local folder: $SRC_PATH"
