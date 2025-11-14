@@ -1,4 +1,4 @@
-prefix = "/home/pringle/sentineldownloader/tessera"
+prefix = "/scratch/groups/dlobell/psinghal/sentineldownloader/tessera"
 input_filepath = "shapefiles/DISTRICT_BOUNDARY.shp"
 output_filepath = "shapefiles/reprojected_india.shp"
 

@@ -10,9 +10,16 @@ set -u
 #######################################
 # USER CONFIGURABLE PARAMETERS
 #######################################
+TILE_ID=$1
+YEAR=$2
+
+if [[ $# -lt 2 ]]; then
+    echo "Usage: $0 TILE_ID YEAR"
+    exit 1
+fi
 
 # === Basic Configuration ===
-BASE_DIR="/home/pringle/sentineldownloader/tessera/timeseries/r28672_c65536"
+BASE_DIR="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/time_series/${YEAR}/${TILE_ID}"
 OUT_DIR="${BASE_DIR}/data_processed"
 DOWNSAMPLE_RATE=1
 

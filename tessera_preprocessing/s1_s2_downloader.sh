@@ -10,26 +10,33 @@ set -u
 #######################################
 # USER CONFIGURABLE PARAMETERS
 #######################################
+TILE_ID=$1
+YEAR=$2
+
+if [[ $# -lt 2 ]]; then
+    echo "Usage: $0 TILE_ID YEAR"
+    exit 1
+fi
 
 # === Basic Configuration ===
-INPUT_TIFF="/home/pringle/sentineldownloader/tessera/shapefiles/india_tiles/tiles/tile_r28672_c65536.tif"
-OUT_DIR="/home/pringle/sentineldownloader/tessera/timeseries/r28672_c65536"
+INPUT_TIFF="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/shapefiles/india_tiles/tiles/tile_${TILE_ID}.tif"
+OUT_DIR="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/time_series/${YEAR}/${TILE_ID}"
 
-export TEMP_DIR="/home/pringle/sentineldownloader/tessera/temp"     # Temporary file directory
+export TEMP_DIR="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/temp"     # Temporary file directory
 
 mkdir -p "$OUT_DIR"
 
 # Python environment path
-PYTHON_ENV="/home/pringle/sentineldownloader/tessera/.venv/bin/python"
+# PYTHON_ENV="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/.venv/bin/python"
 
 # === Sentinel-1 & Sentinel-2 Processing Configuration ===
-YEAR=2024 # Range [2017-2024]
+# YEAR=2015 # Range [2017-2024]
 RESOLUTION=10.0  # Resolution of the input TIFF, also the output resolution (meters)
 
 # === Sentinel-1 Configuration ===
 S1_ENABLED=true                    # Enable S1 processing
-S1_PARTITIONS=2                   # Number of S1 parallel partitions
-S1_TOTAL_WORKERS=2                # Total number of S1 Dask workers
+S1_PARTITIONS=1                   # Number of S1 parallel partitions
+S1_TOTAL_WORKERS=1                # Total number of S1 Dask workers
 S1_WORKER_MEMORY=4                 # Memory per S1 worker (GB)
 S1_CHUNKSIZE=1024                  # S1 stackstac chunk size
 S1_ORBIT_STATE="both"              # Orbit state: ascending/descending/both
@@ -39,8 +46,8 @@ S1_OVERWRITE=true                  # Overwrite existing S1 files
 
 # === Sentinel-2 Configuration ===
 S2_ENABLED=true                    # Enable S2 processing
-S2_PARTITIONS=2                   # Number of S2 parallel partitions
-S2_TOTAL_WORKERS=2                # Total number of S2 Dask workers
+S2_PARTITIONS=7                   # Number of S2 parallel partitions
+S2_TOTAL_WORKERS=7                # Total number of S2 Dask workers
 S2_WORKER_MEMORY=4                 # Memory per S2 worker (GB)
 S2_CHUNKSIZE=1024                  # S2 stackstac chunk size
 S2_MAX_CLOUD=100                    # Maximum cloud coverage for S2 (%)
@@ -204,60 +211,68 @@ generate_partition_id() {
 # Monitoring Function
 #######################################
 monitor_processes() {
-    local -n pids=$1
-    local -n partition_ids=$2
-    local -n start_times=$3
-    local -n completed=$4
-    local -n failed=$5
+    # Arguments are *names* of the arrays
+    local pids_name=$1
+    local partition_ids_name=$2
+    local start_times_name=$3
+    local completed_name=$4
+    local failed_name=$5
     local prefix=$6
     
     declare -A finished_pids
-    
+
     while true; do
         local all_done=true
         local running_count=0
-        
-        for i in "${!pids[@]}"; do
-            local pid=${pids[i]}
+
+        # Expand pids indices
+        eval 'pids_indices=("${!'"${pids_name}"'[@]}")'
+
+        for i in "${pids_indices[@]}"; do
+            # Expand corresponding array elements
+            eval 'pid="${'"${pids_name}"'[$i]}"'
+            eval 'start_time="${'"${start_times_name}"'[$i]}"'
+            eval 'partition_id="${'"${partition_ids_name}"'[$i]}"'
+
             if [[ -n "${finished_pids[$pid]:-}" ]]; then
                 continue
             fi
-            
-            if kill -0 $pid 2>/dev/null; then
+
+            if kill -0 "$pid" 2>/dev/null; then
                 all_done=false
                 running_count=$((running_count + 1))
             else
                 local end_time=$(date +%s)
-                local duration=$((end_time - ${start_times[i]}))
-                local partition_id=${partition_ids[i]}
-                
-                wait $pid
+                local duration=$((end_time - start_time))
+
+                wait "$pid"
                 local exit_code=$?
-                
+
                 finished_pids[$pid]=1
-                
+
                 if [ $exit_code -eq 0 ]; then
                     log SUCCESS "$prefix partition $partition_id completed ($(format_duration $duration))"
-                    completed+=("$partition_id")
+                    eval "${completed_name}+=(\"$partition_id\")"
                 else
                     log ERROR "$prefix partition $partition_id failed with exit code $exit_code ($(format_duration $duration))"
-                    failed+=("$partition_id")
+                    eval "${failed_name}+=(\"$partition_id\")"
                 fi
             fi
         done
-        
+
         if ! $all_done; then
-            echo -ne "\r${CYAN}[$(date '+%H:%M:%S')]${NC} $prefix: ${running_count}/${#pids[@]} partitions running...${NC}"
+            echo -ne "\r${CYAN}[$(date '+%H:%M:%S')]${NC} $prefix: ${running_count}/$(eval "echo \${#${pids_name}[@]}") partitions running...${NC}"
         fi
-        
+
         if $all_done; then
             echo -ne "\r\033[K"  # Clear the line
             break
         fi
-        
-        sleep $LOG_INTERVAL
+
+        sleep "$LOG_INTERVAL"
     done
 }
+
 
 #######################################
 # Processing Functions
@@ -300,7 +315,7 @@ process_sentinel1() {
         local debug_flag=""
         [[ "$DEBUG" == "true" ]] && debug_flag="--debug"
         
-        $PYTHON_ENV s1_fast_processor.py \
+        apptainer run /scratch/groups/dlobell/psinghal/sentineldownloader/dependencies/apptainer/tesseraenv.sif python s1_fast_processor.py \
             --input_tiff "$INPUT_TIFF" \
             --start_date "$p_start" \
             --end_date "$p_end" \
@@ -383,7 +398,7 @@ process_sentinel2() {
         local s2_start="${p_start}T00:00:00"
         local s2_end="${p_end}T23:59:59"
         
-        $PYTHON_ENV s2_fast_processor.py \
+        apptainer run /scratch/groups/dlobell/psinghal/sentineldownloader/dependencies/apptainer/tesseraenv.sif python s2_fast_processor.py \
             --input_tiff "$INPUT_TIFF" \
             --start_date "$s2_start" \
             --end_date "$s2_end" \
@@ -450,10 +465,10 @@ main() {
     fi
     
     # Check Python environment
-    if [[ ! -x "$PYTHON_ENV" ]]; then
-        log ERROR "Python environment not found or not executable: $PYTHON_ENV"
-        exit 1
-    fi
+    # if [[ ! -x "$PYTHON_ENV" ]]; then
+    #     log ERROR "Python environment not found or not executable: $PYTHON_ENV"
+    #     exit 1
+    # fi
     
     # Check Python scripts
     if [[ "$S1_ENABLED" == "true" && ! -f "s1_fast_processor.py" ]]; then

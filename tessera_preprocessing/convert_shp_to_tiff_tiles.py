@@ -19,8 +19,8 @@ import gc
 # ---------------------------
 # CONFIG
 # ---------------------------
-SHAPEFILE = "/home/pringle/sentineldownloader/tessera/shapefiles/reprojected_india.shp"
-OUTPUT_TIFF = "/home/pringle/sentineldownloader/tessera/shapefiles/india_tiles/india_base.tif"
+SHAPEFILE = "/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/shapefiles/reprojected_india.shp"
+OUTPUT_TIFF = "/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/shapefiles/india_tiles/india_base.tif"
 PIXEL_SIZE = 10
 WINDOW_SIZE = 2048
 MAX_WORKERS = 3            # memory-safe limit
