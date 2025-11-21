@@ -9,8 +9,9 @@ Similar outputs are generated for SAR ascending/descending when data exists.
 """
 
 import argparse
+import re
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Tuple
 
 import numpy as np
 import rasterio
@@ -20,10 +21,23 @@ def load_tree_mask(mask_tif: Path, band_index: int) -> np.ndarray:
     with rasterio.open(mask_tif) as src:
         if band_index < 0 or band_index >= src.count:
             raise ValueError(
-                f"Mask band_index {band_index} out of range (0-{src.count-1})"
+                f"Mask band_index { band_index } out of range (0-{src.count - 1})"
             )
         mask = src.read(band_index + 1)
-    return mask > 0
+    return np.asarray(mask > 0, dtype=bool)
+
+
+def parse_subtile_indices(tile_id: str) -> Tuple[int, int]:
+    """
+    Expect tile IDs like 'zoneXXXX_rYYY_cZZZ_srA_scB'. Returns (sr, sc).
+    """
+    match = re.search(r"_sr(\d+)_sc(\d+)", tile_id)
+    if not match:
+        raise ValueError(
+            f"Cannot determine sub-tile indices from tile id '{tile_id}'. "
+            "Expected suffix '_sr<row>_sc<col>'."
+        )
+    return int(match.group(1)), int(match.group(2))
 
 
 def gather_cube(
@@ -66,10 +80,26 @@ def main(processed_dir: Path, mask_tif: Path, band_index: int) -> None:
     masks = np.load(processed_dir / "masks.npy", mmap_mode="r").astype(bool)
     tree_mask = load_tree_mask(mask_tif, band_index)
 
-    if tree_mask.shape != masks.shape[1:]:
-        raise ValueError(
-            f"Tree mask shape {tree_mask.shape} does not match data shape {masks.shape[1:]}."
-        )
+    tile_h, tile_w = masks.shape[1:]
+    mask_h, mask_w = tree_mask.shape
+    if (mask_h, mask_w) != (tile_h, tile_w):
+        if mask_h % tile_h != 0 or mask_w % tile_w != 0:
+            raise ValueError(
+                f"Tree mask shape {tree_mask.shape} is not a multiple of tile shape {(tile_h, tile_w)}"
+            )
+        tiles_y = mask_h // tile_h
+        tiles_x = mask_w // tile_w
+        tile_id = processed_dir.parent.name
+        sr, sc = parse_subtile_indices(tile_id)
+        if sr >= tiles_y or sc >= tiles_x:
+            raise ValueError(
+                f"Subtile indices (sr={sr}, sc={sc}) exceed parent grid ({tiles_y}, {tiles_x})"
+            )
+        y0 = sr * tile_h
+        y1 = y0 + tile_h
+        x0 = sc * tile_w
+        x1 = x0 + tile_w
+        tree_mask = tree_mask[y0:y1, x0:x1]
 
     mask_any = masks.any(axis=0)
     pixel_mask = tree_mask & mask_any
