@@ -8,7 +8,7 @@
 #SBATCH --partition=serc
 #SBATCH --output=logs/tile_dl_%A_%a_%j.log
 #SBATCH --error=logs/tile_dl_%A_%a_%j.err
-#SBATCH --array=634-999
+#SBATCH --array=0-999
 
 set -euo pipefail
 # submitted 0, 1000, 2000, 3000, 4000 (due)
