@@ -22,9 +22,9 @@ from pathlib import Path
 from typing import Iterable, List, Sequence, Tuple
 
 import fiona
+import mgrs
 import numpy as np
 import rasterio
-from geographiclib.mgrs import MGRS
 from pyproj import Transformer
 from rasterio.features import rasterize
 from rasterio.transform import from_origin
@@ -32,7 +32,7 @@ from shapely.geometry import box, shape
 from shapely.ops import transform as shp_transform, unary_union
 
 LOGGER = logging.getLogger("mgrs_tiler")
-MGRS_HELPER = MGRS()
+MGRS_HELPER = mgrs.MGRS()
 
 
 @dataclass
@@ -122,7 +122,8 @@ def _snap_bounds(min_coord: float, max_coord: float, tile_size: int) -> Tuple[in
 
 
 def _mgrs_id_from_centroid(lon: float, lat: float) -> str:
-    return MGRS_HELPER.Forward(lat, lon, 0)
+    # MGRSPrecision=0 returns the 100 km designator (no easting/northing digits).
+    return MGRS_HELPER.toMGRS(lat, lon, MGRSPrecision=0)
 
 
 def _write_manifest(manifest_path: Path, records: Sequence[object]):
