@@ -19,7 +19,7 @@ if [[ $# -lt 2 ]]; then
 fi
 
 # === Basic Configuration ===
-BASE_DIR="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/time_series_utm/${YEAR}/${TILE_ID}"
+BASE_DIR="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/time_series_sparse/${YEAR}/${TILE_ID}"
 OUT_DIR="${BASE_DIR}/data_processed"
 DOWNSAMPLE_RATE=1
 
