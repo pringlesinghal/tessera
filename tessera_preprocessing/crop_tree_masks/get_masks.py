@@ -47,6 +47,7 @@ DEFAULT_MAX_PIXELS = 1e12
 DEFAULT_TASK_PREFIX = "farmtree"
 DEFAULT_MAX_ACTIVE_TASKS = 3
 DEFAULT_POLL_SECONDS = 15
+TREE_CONF_THRESHOLD = 0.1
 
 TREE_COLLECTION_IDS = [
     "projects/ee-rscph-2/assets/tree/global",
@@ -163,8 +164,9 @@ def build_mask_image(
     tile_proj = ee.Projection(f"EPSG:{tile_meta.epsg}")
     transform = tile_meta.crs_transform
 
+    tree_binary = tree_mosaic.gt(TREE_CONF_THRESHOLD)
     tree_reproj = (
-        tree_mosaic.reproject(tile_proj, transform)
+        tree_binary.reproject(tile_proj, transform)
         .reduceResolution(reducer=ee.Reducer.mean(), bestEffort=True, maxPixels=1024)
         .reproject(tile_proj, transform)
     )
