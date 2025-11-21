@@ -22,7 +22,6 @@ from pathlib import Path
 from typing import Iterable, List, Sequence, Tuple
 
 import fiona
-import mgrs
 import numpy as np
 import rasterio
 from pyproj import Transformer
@@ -32,13 +31,11 @@ from shapely.geometry import box, shape
 from shapely.ops import transform as shp_transform, unary_union
 
 LOGGER = logging.getLogger("mgrs_tiler")
-MGRS_HELPER = mgrs.MGRS()
 
 
 @dataclass
 class ParentTileMetadata:
     tile_id: str
-    mgrs_100km: str
     zone: int
     epsg: int
     row: int
@@ -56,7 +53,6 @@ class ParentTileMetadata:
 class SubtileMetadata:
     tile_id: str
     parent_tile_id: str
-    mgrs_100km: str
     zone: int
     epsg: int
     row: int
@@ -119,11 +115,6 @@ def _snap_bounds(min_coord: float, max_coord: float, tile_size: int) -> Tuple[in
     snapped_min = int(math.floor(min_coord / tile_size) * tile_size)
     snapped_max = int(math.ceil(max_coord / tile_size) * tile_size)
     return snapped_min, snapped_max
-
-
-def _mgrs_id_from_centroid(lon: float, lat: float) -> str:
-    # MGRSPrecision=0 returns the 100 km designator (no easting/northing digits).
-    return MGRS_HELPER.toMGRS(lat, lon, MGRSPrecision=0)
 
 
 def _write_manifest(manifest_path: Path, records: Sequence[object]):
@@ -205,12 +196,6 @@ def generate_mgrs_tiles(
 
                     tile_row_idx = int(math.floor(tile_n / tile_size))
                     tile_col_idx = int(math.floor(tile_e / tile_size))
-                    tile_center_lon, tile_center_lat = transformer_to_wgs84.transform(
-                        tile_e + tile_size / 2, tile_n + tile_size / 2
-                    )
-                    parent_mgrs = _mgrs_id_from_centroid(
-                        tile_center_lon, tile_center_lat
-                    )
                     parent_tile_id = f"zone{epsg}_r{tile_row_idx}_c{tile_col_idx}"
                     parent_tile_path = parent_dir / f"tile_{parent_tile_id}.tif"
                     parent_transform = from_origin(
@@ -257,7 +242,6 @@ def generate_mgrs_tiles(
                     parent_records.append(
                         ParentTileMetadata(
                             tile_id=parent_tile_id,
-                            mgrs_100km=parent_mgrs,
                             zone=zone_num,
                             epsg=epsg,
                             row=tile_row_idx,
@@ -304,8 +288,7 @@ def generate_mgrs_tiles(
                             lon, lat = transformer_to_wgs84.transform(
                                 centroid.x, centroid.y
                             )
-                            mgrs_100km = _mgrs_id_from_centroid(lon, lat)
-                            subtile_id = f"{mgrs_100km}_r{row_idx}_c{col_idx}"
+                            subtile_id = f"{parent_tile_id}_sr{row_idx}_sc{col_idx}"
 
                             tile_path = subtile_dir / f"tile_{subtile_id}.tif"
                             if tile_path.exists() and not overwrite:
@@ -335,7 +318,6 @@ def generate_mgrs_tiles(
                                 SubtileMetadata(
                                     tile_id=subtile_id,
                                     parent_tile_id=parent_tile_id,
-                                    mgrs_100km=mgrs_100km,
                                     zone=zone_num,
                                     epsg=epsg,
                                     row=row_idx,
