@@ -77,7 +77,14 @@ def _read_union_geometry(shapefile: Path):
 
     union_geom = unary_union(geoms)
 
-    if not input_crs or input_crs.get("init", "").lower() == "epsg:4326":
+    epsg = None
+    if input_crs:
+        try:
+            epsg = input_crs.to_epsg()
+        except AttributeError:
+            epsg = input_crs.get("epsg")
+
+    if not input_crs or epsg == 4326:
         LOGGER.info("Shapefile already in WGS84.")
         return union_geom
 

@@ -21,7 +21,6 @@ import argparse
 import dataclasses
 import json
 import os
-import re
 import time
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
@@ -35,10 +34,10 @@ from rasterio.io import DatasetReader
 # Defaults & constants
 # ---------------------------------------------------------------------------
 DEFAULT_TILE_LIST = Path(
-    "/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/shapefiles/india_tiles/tiles_utm/completed_tiles.txt"
+    "/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/shapefiles/india_tiles/mgrs_tiles/parent_tile_list.txt"
 )
 DEFAULT_TILE_DIR = Path(
-    "/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/shapefiles/india_tiles/tiles_utm"
+    "/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/shapefiles/india_tiles/mgrs_tiles/tiles_100km"
 )
 DEFAULT_EXPORT_BUCKET = "sidd_rajasthan"
 DEFAULT_EXPORT_PREFIX = "psinghal/farmtree_tiles"
@@ -86,8 +85,6 @@ TREE_COLLECTION_IDS = [
 ]
 WORLDCOVER_COLLECTION_ID = "ESA/WorldCover/v200"
 
-TILE_ID_PATTERN = re.compile(r"zone(\d+)_r(\d+)_c(\d+)")
-
 
 # ---------------------------------------------------------------------------
 # Data containers & helpers
@@ -114,19 +111,11 @@ class TileMetadata:
         )
 
 
-def parse_tile_id(tile_id: str) -> Tuple[int, int, int]:
-    match = TILE_ID_PATTERN.match(tile_id)
-    if not match:
-        raise ValueError(f"Invalid tile id format: {tile_id}")
-    zone, row, col = (int(match.group(i)) for i in range(1, 4))
-    return zone, row, col
-
-
-def load_tile_metadata(tile_id: str, tile_dir: Path) -> TileMetadata:
-    tile_path = tile_dir / f"tile_{tile_id}.tif"
+def load_tile_metadata(tile_path: Path) -> TileMetadata:
     if not tile_path.exists():
         raise FileNotFoundError(f"Tile GeoTIFF not found: {tile_path}")
 
+    tile_id = tile_path.stem.replace("tile_", "")
     with rasterio.open(tile_path) as src:  # type: DatasetReader
         width, height = src.width, src.height
         transform = (
@@ -138,7 +127,9 @@ def load_tile_metadata(tile_id: str, tile_dir: Path) -> TileMetadata:
             src.transform.f,
         )
         bounds = (src.bounds.left, src.bounds.bottom, src.bounds.right, src.bounds.top)
-        epsg = src.crs.to_epsg() if src.crs else parse_tile_id(tile_id)[0]
+        epsg = src.crs.to_epsg()
+        if epsg is None:
+            raise ValueError(f"GeoTIFF {tile_path} is missing CRS metadata.")
 
     return TileMetadata(
         tile_id=tile_id,
@@ -219,9 +210,10 @@ def submit_tile_export(
     format_options: Optional[Dict[str, object]],
     max_pixels: float,
     dry_run: bool,
-) -> Optional[ee.batch.Task]:
+) -> Tuple[Optional[ee.batch.Task], str]:
     description = f"{task_prefix}_{tile_meta.tile_id}"
     file_prefix = f"{export_prefix}/{tile_meta.tile_id}"
+    gcs_uri = f"gs://{export_bucket}/{file_prefix}.tif"
     kwargs: Dict[str, object] = {
         "image": mask_image,
         "description": description,
@@ -235,15 +227,15 @@ def submit_tile_export(
     if format_options:
         kwargs["formatOptions"] = format_options
 
-    print(f"[submit] {tile_meta.tile_id} → gs://{export_bucket}/{file_prefix}.tif")
+    print(f"[submit] {tile_meta.tile_id} → {gcs_uri}")
     if dry_run:
         print("         (dry-run: task not started)")
-        return None
+        return None, gcs_uri
 
     task = ee.batch.Export.image.toCloudStorage(**kwargs)
     task.start()
     print(f"         Task started: {description}")
-    return task
+    return task, gcs_uri
 
 
 # ---------------------------------------------------------------------------
@@ -256,6 +248,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--project", default=DEFAULT_PROJECT)
     parser.add_argument("--tile-list-file", type=Path, default=DEFAULT_TILE_LIST)
     parser.add_argument("--tile-dir", type=Path, default=DEFAULT_TILE_DIR)
+    parser.add_argument(
+        "--tile-paths",
+        nargs="+",
+        help="Explicit list of tile GeoTIFF paths (overrides tile list file).",
+    )
+    parser.add_argument(
+        "--tiles",
+        nargs="+",
+        help="Legacy list of tile IDs to resolve within tile-dir.",
+    )
     parser.add_argument("--export-bucket", default=DEFAULT_EXPORT_BUCKET)
     parser.add_argument("--export-prefix", default=DEFAULT_EXPORT_PREFIX)
     parser.add_argument(
@@ -264,11 +266,6 @@ def parse_args() -> argparse.Namespace:
         nargs="+",
         default=list(DEFAULT_THRESHOLDS),
         help="Tree-cover fractions (0-1) for band thresholds.",
-    )
-    parser.add_argument(
-        "--tiles",
-        nargs="+",
-        help="Explicit list of tile IDs to export (overrides tile list file).",
     )
     parser.add_argument(
         "--max-tiles",
@@ -311,16 +308,23 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def load_tile_ids(args: argparse.Namespace) -> List[str]:
-    if args.tiles:
-        ids = [tid.strip() for tid in args.tiles if tid.strip()]
+def load_tile_paths(args: argparse.Namespace) -> List[Path]:
+    if args.tile_paths:
+        paths = [Path(p).expanduser().resolve() for p in args.tile_paths if p.strip()]
+    elif args.tiles:
+        paths = [
+            (args.tile_dir / f"tile_{tid}.tif").resolve()
+            for tid in args.tiles
+            if tid.strip()
+        ]
     else:
         with args.tile_list_file.open() as f:
             ids = [line.strip() for line in f if line.strip()]
+        paths = [(args.tile_dir / f"tile_{tid}.tif").resolve() for tid in ids]
 
     if args.max_tiles is not None:
-        ids = ids[: args.max_tiles]
-    return ids
+        paths = paths[: args.max_tiles]
+    return paths
 
 
 def append_status(
@@ -329,6 +333,7 @@ def append_status(
     tile_id: str,
     description: str,
     task_id: Optional[str],
+    gcs_uri: str,
 ) -> None:
     if not status_path:
         return
@@ -337,10 +342,45 @@ def append_status(
         "tile_id": tile_id,
         "description": description,
         "task_id": task_id,
+        "gcs_uri": gcs_uri,
         "timestamp": time.time(),
     }
     with status_path.open("a") as f:
         f.write(json.dumps(payload) + "\n")
+
+
+def schedule_mask_export(
+    tile_path: Path,
+    *,
+    tree_mosaic: ee.Image,
+    cropland_mask: ee.Image,
+    thresholds: Sequence[float],
+    export_bucket: str,
+    export_prefix: str,
+    task_prefix: str,
+    max_pixels: float = DEFAULT_MAX_PIXELS,
+    format_options: Optional[Dict[str, object]] = None,
+    dry_run: bool = False,
+) -> Dict[str, object]:
+    metadata = load_tile_metadata(tile_path)
+    mask_image = build_mask_image(metadata, tree_mosaic, cropland_mask, thresholds)
+    task, gcs_uri = submit_tile_export(
+        metadata,
+        mask_image,
+        export_bucket=export_bucket,
+        export_prefix=export_prefix,
+        task_prefix=task_prefix,
+        format_options=format_options,
+        max_pixels=max_pixels,
+        dry_run=dry_run,
+    )
+    description = f"{task_prefix}_{metadata.tile_id}"
+    return {
+        "tile_id": metadata.tile_id,
+        "task_id": task.id if task else None,
+        "gcs_uri": gcs_uri,
+        "description": description,
+    }
 
 
 def main() -> None:
@@ -349,46 +389,47 @@ def main() -> None:
     ee.Initialize(project=args.project)
     print(f"Earth Engine initialized for project '{args.project}'.")
 
-    tile_ids = load_tile_ids(args)
-    if not tile_ids:
+    tile_paths = load_tile_paths(args)
+    if not tile_paths:
         print("No tiles to process.")
         return
 
-    print(f"Loaded {len(tile_ids)} tile IDs.")
+    print(f"Loaded {len(tile_paths)} tile paths.")
 
     tree_mosaic = mosaic_tree_cover()
     cropland_mask = load_cropland_mask()
 
     submitted = 0
-    for tile_id in tile_ids:
+    for tile_path in tile_paths:
         try:
-            metadata = load_tile_metadata(tile_id, args.tile_dir)
+            wait_for_task_slots(
+                args.task_prefix, args.max_active_tasks, args.poll_seconds
+            )
+            result = schedule_mask_export(
+                tile_path,
+                tree_mosaic=tree_mosaic,
+                cropland_mask=cropland_mask,
+                thresholds=args.thresholds,
+                export_bucket=args.export_bucket,
+                export_prefix=args.export_prefix,
+                task_prefix=args.task_prefix,
+                max_pixels=DEFAULT_MAX_PIXELS,
+                format_options=(
+                    {"cloudOptimized": True} if args.cloud_optimized else None
+                ),
+                dry_run=args.dry_run,
+            )
+            append_status(
+                args.status_path,
+                tile_id=result["tile_id"],
+                description=result["description"],
+                task_id=result["task_id"],
+                gcs_uri=result["gcs_uri"],
+            )
+            submitted += 1
         except FileNotFoundError as err:
             print(f"[skip] {err}")
             continue
-
-        wait_for_task_slots(args.task_prefix, args.max_active_tasks, args.poll_seconds)
-
-        mask_image = build_mask_image(
-            metadata, tree_mosaic, cropland_mask, args.thresholds
-        )
-        task = submit_tile_export(
-            metadata,
-            mask_image,
-            export_bucket=args.export_bucket,
-            export_prefix=args.export_prefix,
-            task_prefix=args.task_prefix,
-            format_options={"cloudOptimized": True} if args.cloud_optimized else None,
-            max_pixels=DEFAULT_MAX_PIXELS,
-            dry_run=args.dry_run,
-        )
-        append_status(
-            args.status_path,
-            tile_id=tile_id,
-            description=f"{args.task_prefix}_{tile_id}",
-            task_id=task.id if task else None,
-        )
-        submitted += 1
 
     print(f"Done. Submitted {submitted} tiles (dry-run={args.dry_run}).")
 
