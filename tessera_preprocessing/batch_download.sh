@@ -4,14 +4,14 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=32G
-#SBATCH --time=06:00:00
+#SBATCH --time=12:00:00
 #SBATCH --partition=serc
 #SBATCH --output=logs/tile_dl_%A_%a_%j.log
 #SBATCH --error=logs/tile_dl_%A_%a_%j.err
-#SBATCH --array=0-999
+#SBATCH --array=634-999
 
 set -euo pipefail
-# submitted 0, 1000, 2000
+# submitted 0, 1000, 2000, 3000, 4000 (due)
 
 # File containing the tile IDs
 TILE_LIST="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/shapefiles/india_tiles/tiles_utm/tile_list.txt"
@@ -22,7 +22,7 @@ COMPLETED_UPLOAD_FILE="/scratch/groups/dlobell/psinghal/sentineldownloader/tesse
 cd /scratch/groups/dlobell/psinghal/sentineldownloader/tessera/tessera_preprocessing
 
 # Get the tile ID for this array task
-TILE_ID=$(sed -n "$((SLURM_ARRAY_TASK_ID+1))p" "$TILE_LIST")
+TILE_ID=$(sed -n "$((SLURM_ARRAY_TASK_ID+1+1000))p" "$TILE_LIST")
 echo "Processing tile: $TILE_ID (array task $SLURM_ARRAY_TASK_ID)"
 
 # Loop sequentially over years 2024 → 2016
