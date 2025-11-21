@@ -45,7 +45,6 @@ DEFAULT_PROJECT = "povertyparking"
 DEFAULT_THRESHOLDS = (0.1,)
 DEFAULT_MAX_PIXELS = 1e12
 DEFAULT_TASK_PREFIX = "farmtree"
-DEFAULT_MAX_ACTIVE_TASKS = 3
 DEFAULT_POLL_SECONDS = 15
 TREE_CONF_THRESHOLD = 0.1
 
@@ -182,26 +181,6 @@ def build_mask_image(
     return ee.Image(mask_bands).uint8()
 
 
-def wait_for_task_slots(prefix: str, limit: int, poll_seconds: int) -> None:
-    if limit <= 0:
-        return
-
-    while True:
-        tasks = ee.batch.Task.list()
-        active = [
-            t
-            for t in tasks
-            if t.config.get("description", "").startswith(prefix)
-            and t.state in ("READY", "RUNNING")
-        ]
-        if len(active) < limit:
-            return
-        print(
-            f"[controller] {len(active)} tasks in-flight (limit {limit}). Waiting {poll_seconds}s..."
-        )
-        time.sleep(poll_seconds)
-
-
 def submit_tile_export(
     tile_meta: TileMetadata,
     mask_image: ee.Image,
@@ -274,12 +253,6 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=None,
         help="Limit the number of tiles processed (useful for quick tests).",
-    )
-    parser.add_argument(
-        "--max-active-tasks",
-        type=int,
-        default=DEFAULT_MAX_ACTIVE_TASKS,
-        help="Maximum concurrent EE tasks tagged with this script.",
     )
     parser.add_argument(
         "--task-prefix",
@@ -402,33 +375,41 @@ def main() -> None:
     cropland_mask = load_cropland_mask()
 
     submitted = 0
+    backoff = 5
+    max_backoff = 600
     for tile_path in tile_paths:
         try:
-            wait_for_task_slots(
-                args.task_prefix, args.max_active_tasks, args.poll_seconds
-            )
-            result = schedule_mask_export(
-                tile_path,
-                tree_mosaic=tree_mosaic,
-                cropland_mask=cropland_mask,
-                thresholds=args.thresholds,
-                export_bucket=args.export_bucket,
-                export_prefix=args.export_prefix,
-                task_prefix=args.task_prefix,
-                max_pixels=DEFAULT_MAX_PIXELS,
-                format_options=(
-                    {"cloudOptimized": True} if args.cloud_optimized else None
-                ),
-                dry_run=args.dry_run,
-            )
-            append_status(
-                args.status_path,
-                tile_id=result["tile_id"],
-                description=result["description"],
-                task_id=result["task_id"],
-                gcs_uri=result["gcs_uri"],
-            )
-            submitted += 1
+            while True:
+                try:
+                    result = schedule_mask_export(
+                        tile_path,
+                        tree_mosaic=tree_mosaic,
+                        cropland_mask=cropland_mask,
+                        thresholds=args.thresholds,
+                        export_bucket=args.export_bucket,
+                        export_prefix=args.export_prefix,
+                        task_prefix=args.task_prefix,
+                        max_pixels=DEFAULT_MAX_PIXELS,
+                        format_options=(
+                            {"cloudOptimized": True} if args.cloud_optimized else None
+                        ),
+                        dry_run=args.dry_run,
+                    )
+                    append_status(
+                        args.status_path,
+                        tile_id=result["tile_id"],
+                        description=result["description"],
+                        task_id=result["task_id"],
+                        gcs_uri=result["gcs_uri"],
+                    )
+                    submitted += 1
+                    backoff = 5
+                    break
+                except ee.EEException as ee_err:
+                    print(f"[retry] EE error for {tile_path}: {ee_err}")
+                    print(f"          sleeping {backoff}s before retry")
+                    time.sleep(backoff)
+                    backoff = min(backoff * 2, max_backoff)
         except FileNotFoundError as err:
             print(f"[skip] {err}")
             continue
