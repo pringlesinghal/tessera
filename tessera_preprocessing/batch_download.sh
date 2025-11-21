@@ -14,7 +14,7 @@ set -euo pipefail
 # submitted 0, 1000, 2000, 3000, 4000 (due)
 
 # File containing the tile IDs
-TILE_LIST="${1:-/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/shapefiles/india_tiles/mgrs_tiles/subtile_tile_list.txt}"
+TILE_LIST="${1:-/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/shapefiles/india_tiles/mgrs_tiles/subtile_tile_list_shuffled.txt}"
 STARTED_FILE="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/shapefiles/india_tiles/mgrs_tiles/started_tiles.txt"
 COMPLETED_FILE="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/shapefiles/india_tiles/mgrs_tiles/completed_tiles.txt"
 COMPLETED_UPLOAD_FILE="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/shapefiles/india_tiles/mgrs_tiles/completed_upload_tiles.txt"
