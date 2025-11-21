@@ -19,8 +19,8 @@ if [[ $# -lt 2 ]]; then
 fi
 
 # === Basic Configuration ===
-INPUT_TIFF="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/shapefiles/india_tiles/tiles_utm/tile_${TILE_ID}.tif"
-OUT_DIR="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/time_series_utm/${YEAR}/${TILE_ID}"
+INPUT_TIFF="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/mgrs_tiles/tiles_20km/tile_${TILE_ID}.tif"
+OUT_DIR="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/time_series_sparse/${YEAR}/${TILE_ID}"
 
 export TEMP_DIR="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/temp"     # Temporary file directory
 
@@ -52,7 +52,7 @@ S2_WORKER_MEMORY=4                 # Memory per S2 worker (GB)
 S2_CHUNKSIZE=1024                  # S2 stackstac chunk size
 S2_MAX_CLOUD=100                    # Maximum cloud coverage for S2 (%)
 S2_RESOLUTION=$RESOLUTION          # S2 output resolution (meters)
-S2_MIN_COVERAGE=10.0               # Minimum valid pixel coverage for S2 (%)
+S2_MIN_COVERAGE=0               # Minimum valid pixel coverage for S2 (%)
 S2_OVERWRITE=true                  # Overwrite existing S2 files
 
 # === System Configuration ===
