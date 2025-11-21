@@ -16,9 +16,13 @@ import numpy as np
 import rasterio
 
 
-def load_tree_mask(mask_tif: Path) -> np.ndarray:
+def load_tree_mask(mask_tif: Path, band_index: int) -> np.ndarray:
     with rasterio.open(mask_tif) as src:
-        mask = src.read(1)
+        if band_index < 0 or band_index >= src.count:
+            raise ValueError(
+                f"Mask band_index {band_index} out of range (0-{src.count-1})"
+            )
+        mask = src.read(band_index + 1)
     return mask > 0
 
 
@@ -67,7 +71,7 @@ def save_outputs(
     np.save(out_dir / f"{prefix}_idx.npy", np.stack([rows, cols], axis=1))
 
 
-def main(processed_dir: Path, mask_tif: Path) -> None:
+def main(processed_dir: Path, mask_tif: Path, band_index: int) -> None:
     processed_dir = processed_dir.resolve()
     mask_tif = mask_tif.resolve()
     if not processed_dir.exists():
@@ -80,7 +84,7 @@ def main(processed_dir: Path, mask_tif: Path) -> None:
 
     bands = np.load(processed_dir / "bands.npy")
     masks = np.load(processed_dir / "masks.npy").astype(bool)
-    tree_mask = load_tree_mask(mask_tif)
+    tree_mask = load_tree_mask(mask_tif, band_index)
 
     if tree_mask.shape != masks.shape[1:]:
         raise ValueError(
@@ -100,12 +104,16 @@ def main(processed_dir: Path, mask_tif: Path) -> None:
     sar_desc = np.load(processed_dir / "sar_descending.npy")
 
     sar_asc_valid = (
-        np.broadcast_to(tree_mask.reshape(1, -1), (sar_asc.shape[0], tree_mask.size))[:, valid_idx].T
+        np.broadcast_to(tree_mask.reshape(1, -1), (sar_asc.shape[0], tree_mask.size))[
+            :, valid_idx
+        ].T
         if sar_asc.size > 0
         else None
     )
     sar_desc_valid = (
-        np.broadcast_to(tree_mask.reshape(1, -1), (sar_desc.shape[0], tree_mask.size))[:, valid_idx].T
+        np.broadcast_to(tree_mask.reshape(1, -1), (sar_desc.shape[0], tree_mask.size))[
+            :, valid_idx
+        ].T
         if sar_desc.size > 0
         else None
     )
@@ -127,6 +135,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Create sparse timeseries tensors.")
     parser.add_argument("processed_dir", type=Path)
     parser.add_argument("tree_mask_tif", type=Path)
+    parser.add_argument(
+        "--mask-band-index",
+        type=int,
+        default=0,
+        help="0-based band index to use from the tree mask TIFF (default: 0).",
+    )
     args = parser.parse_args()
-    main(args.processed_dir, args.tree_mask_tif)
-
+    main(args.processed_dir, args.tree_mask_tif, args.mask_band_index)
