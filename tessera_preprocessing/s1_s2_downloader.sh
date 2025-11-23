@@ -52,7 +52,7 @@ S2_WORKER_MEMORY=4                 # Memory per S2 worker (GB)
 S2_CHUNKSIZE=1024                  # S2 stackstac chunk size
 S2_MAX_CLOUD=100                    # Maximum cloud coverage for S2 (%)
 S2_RESOLUTION=$RESOLUTION          # S2 output resolution (meters)
-S2_MIN_COVERAGE=0               # Minimum valid pixel coverage for S2 (%)
+S2_MIN_COVERAGE=1               # Minimum valid pixel coverage for S2 (%)
 S2_OVERWRITE=true                  # Overwrite existing S2 files
 
 # === System Configuration ===
