@@ -8,7 +8,7 @@
 #SBATCH --partition=serc
 #SBATCH --output=logs/tile_dl_%A_%a_%j.log
 #SBATCH --error=logs/tile_dl_%A_%a_%j.err
-#SBATCH --array=0-999
+#SBATCH --array=0-1
 
 set -euo pipefail
 # submitted 0, 1000, 2000, 3000, 4000 (due)
@@ -34,9 +34,9 @@ for YEAR in {2024..2016..-1}; do
     echo "Processing year: $YEAR for tile $TILE_ID"
     bash s1_s2_downloader.sh "$TILE_ID" "$YEAR"
     bash s1_s2_stacker.sh "$TILE_ID" "$YEAR"
-RAW_DIR="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/time_series_sparse/${YEAR}/${TILE_ID}/data_raw"
-RAW_DIR_SAR="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/time_series_sparse/${YEAR}/${TILE_ID}/data_sar_raw"
-LOG_DIR="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/time_series_sparse/${YEAR}/${TILE_ID}/logs"
+RAW_DIR="/scratch/users/psinghal/time_series/${YEAR}/${TILE_ID}/data_raw"
+RAW_DIR_SAR="/scratch/users/psinghal/time_series/${YEAR}/${TILE_ID}/data_sar_raw"
+LOG_DIR="/scratch/users/psinghal/time_series/${YEAR}/${TILE_ID}/logs"
     if [ -d "$RAW_DIR" ]; then
         rm -rf "$RAW_DIR"
         echo "Deleted raw directory $RAW_DIR"

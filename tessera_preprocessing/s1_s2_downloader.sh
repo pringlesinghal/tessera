@@ -20,9 +20,9 @@ fi
 
 # === Basic Configuration ===
 INPUT_TIFF="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/shapefiles/india_tiles/mgrs_tiles/tiles_20km/tile_${TILE_ID}.tif"
-OUT_DIR="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/time_series_sparse/${YEAR}/${TILE_ID}"
+OUT_DIR="/scratch/users/psinghal/time_series/${YEAR}/${TILE_ID}"
 
-export TEMP_DIR="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/temp"     # Temporary file directory
+export TEMP_DIR="/scratch/users/psinghal/temp_download"     # Temporary file directory
 
 mkdir -p "$OUT_DIR"
 
