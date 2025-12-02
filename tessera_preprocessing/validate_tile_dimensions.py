@@ -139,6 +139,7 @@ def main():
     parser.add_argument('--data_dir', type=str, required=True, help="Root data directory")
     parser.add_argument('--output', type=str, default='validation_report.txt', help="Output report file")
     parser.add_argument('--years', type=str, nargs='+', help="Specific years to check (default: all)")
+    parser.add_argument('--completed_tiles_file', type=str, help="File containing list of completed tiles to check (one per line)")
     args = parser.parse_args()
     
     data_dir = Path(args.data_dir)
@@ -146,6 +147,17 @@ def main():
     if not data_dir.exists():
         logger.error(f"Data directory does not exist: {data_dir}")
         return
+    
+    # Load completed tiles filter if provided
+    completed_tiles = None
+    if args.completed_tiles_file:
+        completed_tiles_path = Path(args.completed_tiles_file)
+        if not completed_tiles_path.exists():
+            logger.error(f"Completed tiles file not found: {completed_tiles_path}")
+            return
+        with open(completed_tiles_path, 'r') as f:
+            completed_tiles = set(line.strip() for line in f if line.strip())
+        logger.info(f"Loaded {len(completed_tiles)} completed tiles to check")
     
     # Determine years to check
     if args.years:
@@ -176,6 +188,10 @@ def main():
         logger.info(f"Checking year {year}...")
         
         tile_dirs = [d for d in year_dir.iterdir() if d.is_dir()]
+        
+        # Filter by completed tiles if provided
+        if completed_tiles:
+            tile_dirs = [d for d in tile_dirs if d.name in completed_tiles]
         
         for tile_dir in tile_dirs:
             stats['total_tiles'] += 1
@@ -241,15 +257,22 @@ def main():
         if invalid_tiles:
             f.write("INVALID TILES DETAILS\n")
             f.write("-" * 80 + "\n")
-            for tile_info in invalid_tiles[:100]:  # Limit to first 100
+            f.write(f"Total invalid tiles: {len(invalid_tiles)}\n\n")
+            
+            # Write ALL invalid tiles (no truncation)
+            for tile_info in invalid_tiles:
                 f.write(f"\nYear: {tile_info['year']}, Tile: {tile_info['tile_id']}\n")
                 f.write(f"Dimensions: {tile_info['dimensions']}\n")
                 f.write(f"Errors:\n")
                 for error in tile_info['errors']:
                     f.write(f"  - {error}\n")
             
-            if len(invalid_tiles) > 100:
-                f.write(f"\n... and {len(invalid_tiles) - 100} more invalid tiles\n")
+            # Also write a simple CSV list for easy parsing
+            f.write("\n" + "=" * 80 + "\n")
+            f.write("INVALID TILES CSV FORMAT (tile_id,year)\n")
+            f.write("=" * 80 + "\n")
+            for tile_info in invalid_tiles:
+                f.write(f"{tile_info['tile_id']},{tile_info['year']}\n")
     
     logger.info("=" * 80)
     logger.info("VALIDATION COMPLETE")
