@@ -1,0 +1,571 @@
+================================================================================
+TILE DIMENSION VALIDATION REPORT
+================================================================================
+
+Data Directory: /scratch/users/psinghal/time_series
+Years Checked: 2020, 2019, 2024, 2022, 2016, 2021, 2017, 2018, 2023
+
+SUMMARY
+--------------------------------------------------------------------------------
+Total Tiles: 19390
+Valid Tiles: 18031
+Invalid Tiles: 1359
+Success Rate: 92.99%
+
+DIMENSION DISTRIBUTION
+--------------------------------------------------------------------------------
+2000x2000: 18031 tiles
+
+ERROR TYPES
+--------------------------------------------------------------------------------
+Missing data_processed directory: 1170 occurrences
+Missing doys.npy: 121 occurrences
+Error loading bands.npy: 100 occurrences
+Error loading masks.npy: 100 occurrences
+sar_ascending.npy has wrong spatial dimensions: 82 occurrences
+sar_descending.npy has wrong spatial dimensions: 82 occurrences
+Error loading sar_descending.npy: 34 occurrences
+Error loading sar_ascending.npy: 24 occurrences
+Missing bands.npy: 21 occurrences
+Missing masks.npy: 21 occurrences
+Error loading sar_ascending_doy.npy: 4 occurrences
+
+INVALID TILES DETAILS
+--------------------------------------------------------------------------------
+
+Year: 2020, Tile: zone32643_r9_c7_sr4_sc4
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32643_r34_c7_sr1_sc2
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32644_r19_c7_sr4_sc4
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32642_r24_c7_sr1_sc4
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32644_r20_c3_sr2_sc4
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32642_r29_c6_sr3_sc2
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32643_r34_c5_sr4_sc0
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32644_r23_c7_sr4_sc3
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32644_r23_c3_sr4_sc2
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32643_r19_c5_sr1_sc3
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32643_r28_c6_sr2_sc3
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32645_r25_c6_sr1_sc1
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32643_r30_c7_sr2_sc2
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32643_r30_c5_sr4_sc2
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32645_r27_c5_sr3_sc1
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32644_r28_c5_sr1_sc0
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32644_r33_c2_sr3_sc4
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32644_r23_c5_sr2_sc0
+Dimensions: {'sar_ascending.npy': (0, 2000, 2000, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (30, 2000, 2000, 2), 'sar_descending_doy.npy': (30,)}
+Errors:
+  - Error loading bands.npy: mmap length is greater than file size
+  - Error loading masks.npy: mmap length is greater than file size
+  - Missing doys.npy
+
+Year: 2020, Tile: zone32643_r25_c4_sr1_sc4
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32643_r27_c4_sr1_sc4
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32645_r22_c2_sr2_sc0
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32643_r12_c1_sr4_sc4
+Dimensions: {'sar_ascending.npy': (0, 2000, 2000, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (1, 2000, 2000, 2), 'sar_descending_doy.npy': (1,)}
+Errors:
+  - Missing bands.npy
+  - Missing masks.npy
+  - Missing doys.npy
+
+Year: 2020, Tile: zone32643_r36_c5_sr0_sc2
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32643_r20_c6_sr3_sc1
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32644_r18_c5_sr3_sc1
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32644_r24_c7_sr2_sc1
+Dimensions: {'sar_ascending.npy': (0, 2000, 2000, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (32, 2000, 2000, 2), 'sar_descending_doy.npy': (32,)}
+Errors:
+  - Error loading bands.npy: mmap length is greater than file size
+  - Error loading masks.npy: mmap length is greater than file size
+  - Missing doys.npy
+
+Year: 2020, Tile: zone32645_r27_c1_sr3_sc4
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32646_r27_c6_sr1_sc1
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32643_r19_c3_sr4_sc2
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32642_r26_c7_sr1_sc4
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32644_r23_c7_sr1_sc2
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32643_r39_c7_sr0_sc0
+Dimensions: {'sar_ascending.npy': (29, 2000, 2000, 2), 'sar_ascending_doy.npy': (29,), 'sar_descending.npy': (31, 2000, 2000, 2), 'sar_descending_doy.npy': (31,)}
+Errors:
+  - Error loading bands.npy: mmap length is greater than file size
+  - Error loading masks.npy: mmap length is greater than file size
+  - Missing doys.npy
+
+Year: 2020, Tile: zone32642_r26_c6_sr1_sc3
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32643_r24_c2_sr1_sc3
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32644_r15_c3_sr3_sc3
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32643_r38_c4_sr1_sc4
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32643_r25_c4_sr3_sc2
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32643_r32_c4_sr2_sc1
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32644_r19_c4_sr1_sc3
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32643_r11_c2_sr3_sc1
+Dimensions: {'sar_ascending.npy': (0, 2000, 2000, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (1, 2000, 2000, 2), 'sar_descending_doy.npy': (1,)}
+Errors:
+  - Missing bands.npy
+  - Missing masks.npy
+  - Missing doys.npy
+
+Year: 2020, Tile: zone32644_r18_c4_sr2_sc1
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32644_r23_c5_sr4_sc3
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32644_r20_c4_sr2_sc2
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32644_r27_c5_sr3_sc1
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32644_r23_c3_sr3_sc0
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32644_r26_c3_sr4_sc0
+Dimensions: {'sar_ascending.npy': (0, 2000, 2000, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (31, 2000, 2000, 2), 'sar_descending_doy.npy': (31,)}
+Errors:
+  - Error loading bands.npy: mmap length is greater than file size
+  - Error loading masks.npy: No data left in file
+  - Missing doys.npy
+
+Year: 2020, Tile: zone32645_r25_c6_sr1_sc0
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32643_r31_c4_sr2_sc1
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32643_r39_c4_sr0_sc0
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32643_r28_c2_sr2_sc1
+Dimensions: {'sar_ascending.npy': (30, 2000, 2000, 2), 'sar_ascending_doy.npy': (30,), 'sar_descending.npy': (31, 2000, 2000, 2), 'sar_descending_doy.npy': (31,)}
+Errors:
+  - Error loading bands.npy: mmap length is greater than file size
+  - Error loading masks.npy: mmap length is greater than file size
+  - Missing doys.npy
+
+Year: 2020, Tile: zone32644_r20_c7_sr4_sc1
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32643_r37_c6_sr0_sc3
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32643_r12_c1_sr0_sc4
+Dimensions: {'sar_ascending.npy': (0, 2000, 2000, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (1, 2000, 2000, 2), 'sar_descending_doy.npy': (1,)}
+Errors:
+  - Missing bands.npy
+  - Missing masks.npy
+  - Missing doys.npy
+
+Year: 2020, Tile: zone32643_r11_c3_sr4_sc2
+Dimensions: {'sar_ascending.npy': (0, 2000, 2000, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (1, 2000, 2000, 2), 'sar_descending_doy.npy': (1,)}
+Errors:
+  - Missing bands.npy
+  - Missing masks.npy
+  - Missing doys.npy
+
+Year: 2020, Tile: zone32647_r30_c2_sr3_sc2
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32643_r32_c5_sr3_sc3
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32645_r25_c4_sr2_sc3
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32643_r23_c2_sr4_sc1
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32645_r27_c5_sr0_sc1
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32645_r22_c3_sr3_sc2
+Dimensions: {'sar_ascending.npy': (0, 2000, 2000, 2), 'sar_ascending_doy.npy': (0,)}
+Errors:
+  - Error loading bands.npy: mmap length is greater than file size
+  - Error loading masks.npy: mmap length is greater than file size
+  - Missing doys.npy
+  - Error loading sar_descending.npy: mmap length is greater than file size
+
+Year: 2020, Tile: zone32644_r25_c6_sr0_sc2
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32643_r27_c1_sr0_sc4
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32644_r17_c4_sr3_sc0
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32644_r29_c2_sr2_sc3
+Dimensions: {'sar_ascending.npy': (29, 2000, 2000, 2), 'sar_ascending_doy.npy': (29,), 'sar_descending.npy': (28, 2000, 2000, 2), 'sar_descending_doy.npy': (28,)}
+Errors:
+  - Error loading bands.npy: mmap length is greater than file size
+  - Error loading masks.npy: mmap length is greater than file size
+  - Missing doys.npy
+
+Year: 2020, Tile: zone32643_r12_c6_sr4_sc1
+Dimensions: {'sar_ascending.npy': (0, 2000, 2000, 2)}
+Errors:
+  - Error loading bands.npy: mmap length is greater than file size
+  - Error loading masks.npy: mmap length is greater than file size
+  - Missing doys.npy
+  - Error loading sar_ascending_doy.npy: No data left in file
+
+Year: 2020, Tile: zone32643_r40_c5_sr2_sc0
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32644_r21_c2_sr4_sc2
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32643_r14_c7_sr3_sc1
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32644_r28_c3_sr1_sc1
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2020, Tile: zone32643_r12_c2_sr2_sc2
+Dimensions: {'sar_ascending.npy': (0, 2000, 2000, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (1, 2000, 2000, 2), 'sar_descending_doy.npy': (1,)}
+Errors:
+  - Missing bands.npy
+  - Missing masks.npy
+  - Missing doys.npy
+
+Year: 2020, Tile: zone32644_r10_c2_sr2_sc2
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2019, Tile: zone32645_r24_c6_sr2_sc4
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2019, Tile: zone32643_r12_c7_sr4_sc1
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2019, Tile: zone32643_r36_c6_sr1_sc0
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2019, Tile: zone32646_r29_c7_sr3_sc3
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2019, Tile: zone32643_r26_c3_sr2_sc4
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2019, Tile: zone32643_r12_c1_sr4_sc4
+Dimensions: {'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - Missing bands.npy
+  - Missing masks.npy
+  - Missing doys.npy
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2019, Tile: zone32644_r24_c2_sr0_sc2
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2019, Tile: zone32644_r18_c3_sr1_sc1
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2019, Tile: zone32644_r30_c5_sr3_sc3
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2019, Tile: zone32643_r12_c6_sr4_sc1
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2019, Tile: zone32644_r23_c5_sr2_sc0
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2019, Tile: zone32643_r33_c6_sr4_sc1
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2019, Tile: zone32646_r31_c6_sr2_sc4
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2019, Tile: zone32644_r22_c7_sr1_sc4
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2019, Tile: zone32644_r25_c5_sr1_sc2
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2019, Tile: zone32642_r27_c6_sr3_sc4
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2019, Tile: zone32643_r16_c5_sr0_sc1
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2019, Tile: zone32645_r26_c2_sr4_sc4
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2019, Tile: zone32643_r29_c2_sr1_sc4
+Dimensions: {'sar_ascending.npy': (0, 2000, 2000, 2), 'sar_ascending_doy.npy': (0,)}
+Errors:
+  - Error loading bands.npy: mmap length is greater than file size
+  - Error loading masks.npy: mmap length is greater than file size
+  - Missing doys.npy
+  - Error loading sar_descending.npy: mmap length is greater than file size
+
+Year: 2019, Tile: zone32642_r28_c7_sr3_sc0
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2019, Tile: zone32645_r24_c3_sr3_sc3
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2019, Tile: zone32643_r34_c5_sr3_sc2
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2019, Tile: zone32644_r29_c6_sr4_sc2
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2019, Tile: zone32643_r19_c7_sr3_sc2
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2019, Tile: zone32643_r25_c6_sr2_sc4
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2019, Tile: zone32644_r26_c2_sr3_sc4
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2019, Tile: zone32644_r25_c3_sr3_sc2
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2019, Tile: zone32644_r25_c4_sr0_sc1
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+Year: 2019, Tile: zone32644_r34_c2_sr2_sc0
+Dimensions: {}
+Errors:
+  - Missing data_processed directory
+
+... and 1259 more invalid tiles
