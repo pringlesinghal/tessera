@@ -343,6 +343,7 @@ def main():
                     rolling_loss = rolling_loss[-rolling_size:]
                 avg_loss = sum(rolling_loss) / len(rolling_loss)
                 current_lr = optimizer.param_groups[0]["lr"]
+                print(f"{current_lr=}")
                 erank_z = rankme(z1)
                 erank_repr = rankme(repr1)
                 mix_loss_val = (
