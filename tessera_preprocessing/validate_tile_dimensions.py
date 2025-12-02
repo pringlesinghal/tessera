@@ -63,10 +63,22 @@ def validate_tile(tile_path):
                 if len(arr.shape) != 4:
                     result['valid'] = False
                     result['errors'].append(f"{filename} has wrong ndim: {len(arr.shape)} (expected 4)")
+                else:
+                    # Check spatial dimensions are 2000x2000
+                    _, H, W, _ = arr.shape
+                    if H != 2000 or W != 2000:
+                        result['valid'] = False
+                        result['errors'].append(f"{filename} has wrong spatial dimensions: {H}x{W} (expected 2000x2000)")
             elif filename == 'masks.npy':
                 if len(arr.shape) != 3:
                     result['valid'] = False
                     result['errors'].append(f"{filename} has wrong ndim: {len(arr.shape)} (expected 3)")
+                else:
+                    # Check spatial dimensions are 2000x2000
+                    _, H, W = arr.shape
+                    if H != 2000 or W != 2000:
+                        result['valid'] = False
+                        result['errors'].append(f"{filename} has wrong spatial dimensions: {H}x{W} (expected 2000x2000)")
             elif filename == 'doys.npy':
                 if len(arr.shape) != 1:
                     result['valid'] = False
@@ -94,6 +106,12 @@ def validate_tile(tile_path):
                     if len(arr.shape) != 4:
                         result['valid'] = False
                         result['errors'].append(f"{filename} has wrong ndim: {len(arr.shape)} (expected 4)")
+                    else:
+                        # Check spatial dimensions are 2000x2000
+                        _, H, W, _ = arr.shape
+                        if H != 2000 or W != 2000:
+                            result['valid'] = False
+                            result['errors'].append(f"{filename} has wrong spatial dimensions: {H}x{W} (expected 2000x2000)")
                 else:
                     if len(arr.shape) != 1:
                         result['valid'] = False
