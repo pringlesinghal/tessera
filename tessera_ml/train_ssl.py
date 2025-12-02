@@ -62,7 +62,7 @@ DEFAULT_CONFIG = {
     "sample_size_s1": 40,
     "num_workers": 4,
     "shuffle_tiles": True,
-    "warmup_ratio": 0.1,
+    "warmup_ratio": 0,
     "plateau_ratio": 0.0,
     "apply_amp": True,
     "apply_mixup": True,
