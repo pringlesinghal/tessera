@@ -1,0 +1,722 @@
+================================================================================
+TILE DIMENSION VALIDATION REPORT
+================================================================================
+
+Data Directory: /scratch/users/psinghal/time_series
+Years Checked: 2020, 2019, 2024, 2022, 2016, 2021, 2017, 2018, 2023
+
+SUMMARY
+--------------------------------------------------------------------------------
+Total Tiles: 16470
+Valid Tiles: 16380
+Invalid Tiles: 90
+Success Rate: 99.45%
+
+DIMENSION DISTRIBUTION
+--------------------------------------------------------------------------------
+2000x2000: 16380 tiles
+
+ERROR TYPES
+--------------------------------------------------------------------------------
+sar_ascending.npy has wrong spatial dimensions: 82 occurrences
+sar_descending.npy has wrong spatial dimensions: 82 occurrences
+Missing doys.npy: 24 occurrences
+Missing bands.npy: 21 occurrences
+Missing masks.npy: 21 occurrences
+Error loading bands.npy: 3 occurrences
+Error loading masks.npy: 3 occurrences
+
+INVALID TILES DETAILS
+--------------------------------------------------------------------------------
+Total invalid tiles: 90
+
+
+Year: 2020, Tile: zone32643_r12_c1_sr4_sc4
+Dimensions: {'sar_ascending.npy': (0, 2000, 2000, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (1, 2000, 2000, 2), 'sar_descending_doy.npy': (1,)}
+Errors:
+  - Missing bands.npy
+  - Missing masks.npy
+  - Missing doys.npy
+
+Year: 2020, Tile: zone32643_r11_c2_sr3_sc1
+Dimensions: {'sar_ascending.npy': (0, 2000, 2000, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (1, 2000, 2000, 2), 'sar_descending_doy.npy': (1,)}
+Errors:
+  - Missing bands.npy
+  - Missing masks.npy
+  - Missing doys.npy
+
+Year: 2020, Tile: zone32643_r12_c1_sr0_sc4
+Dimensions: {'sar_ascending.npy': (0, 2000, 2000, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (1, 2000, 2000, 2), 'sar_descending_doy.npy': (1,)}
+Errors:
+  - Missing bands.npy
+  - Missing masks.npy
+  - Missing doys.npy
+
+Year: 2020, Tile: zone32643_r11_c3_sr4_sc2
+Dimensions: {'sar_ascending.npy': (0, 2000, 2000, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (1, 2000, 2000, 2), 'sar_descending_doy.npy': (1,)}
+Errors:
+  - Missing bands.npy
+  - Missing masks.npy
+  - Missing doys.npy
+
+Year: 2020, Tile: zone32643_r12_c2_sr2_sc2
+Dimensions: {'sar_ascending.npy': (0, 2000, 2000, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (1, 2000, 2000, 2), 'sar_descending_doy.npy': (1,)}
+Errors:
+  - Missing bands.npy
+  - Missing masks.npy
+  - Missing doys.npy
+
+Year: 2019, Tile: zone32643_r12_c1_sr4_sc4
+Dimensions: {'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - Missing bands.npy
+  - Missing masks.npy
+  - Missing doys.npy
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2019, Tile: zone32643_r12_c1_sr0_sc4
+Dimensions: {'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - Missing bands.npy
+  - Missing masks.npy
+  - Missing doys.npy
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2019, Tile: zone32643_r12_c2_sr2_sc2
+Dimensions: {'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - Missing bands.npy
+  - Missing masks.npy
+  - Missing doys.npy
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2019, Tile: zone32643_r11_c3_sr4_sc2
+Dimensions: {'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - Missing bands.npy
+  - Missing masks.npy
+  - Missing doys.npy
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2019, Tile: zone32643_r11_c2_sr3_sc1
+Dimensions: {'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - Missing bands.npy
+  - Missing masks.npy
+  - Missing doys.npy
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2024, Tile: zone32643_r12_c1_sr0_sc4
+Dimensions: {'bands.npy': (47, 2000, 2000, 10), 'masks.npy': (47, 2000, 2000), 'doys.npy': (47,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2024, Tile: zone32643_r11_c3_sr4_sc2
+Dimensions: {'bands.npy': (46, 2000, 2000, 10), 'masks.npy': (46, 2000, 2000), 'doys.npy': (46,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2024, Tile: zone32643_r12_c1_sr4_sc4
+Dimensions: {'bands.npy': (38, 2000, 2000, 10), 'masks.npy': (38, 2000, 2000), 'doys.npy': (38,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2024, Tile: zone32643_r11_c2_sr3_sc1
+Dimensions: {'bands.npy': (42, 2000, 2000, 10), 'masks.npy': (42, 2000, 2000), 'doys.npy': (42,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2024, Tile: zone32643_r12_c2_sr2_sc2
+Dimensions: {'bands.npy': (36, 2000, 2000, 10), 'masks.npy': (36, 2000, 2000), 'doys.npy': (36,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2022, Tile: zone32643_r12_c1_sr4_sc4
+Dimensions: {'bands.npy': (43, 2000, 2000, 10), 'masks.npy': (43, 2000, 2000), 'doys.npy': (43,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2022, Tile: zone32643_r11_c2_sr3_sc1
+Dimensions: {'bands.npy': (46, 2000, 2000, 10), 'masks.npy': (46, 2000, 2000), 'doys.npy': (46,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2022, Tile: zone32643_r12_c1_sr0_sc4
+Dimensions: {'bands.npy': (48, 2000, 2000, 10), 'masks.npy': (48, 2000, 2000), 'doys.npy': (48,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2022, Tile: zone32643_r11_c3_sr4_sc2
+Dimensions: {'bands.npy': (45, 2000, 2000, 10), 'masks.npy': (45, 2000, 2000), 'doys.npy': (45,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2022, Tile: zone32643_r12_c2_sr2_sc2
+Dimensions: {'bands.npy': (48, 2000, 2000, 10), 'masks.npy': (48, 2000, 2000), 'doys.npy': (48,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32646_r14_c4_sr0_sc4
+Dimensions: {'bands.npy': (7, 2000, 2000, 10), 'masks.npy': (7, 2000, 2000), 'doys.npy': (7,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32643_r41_c5_sr0_sc1
+Dimensions: {'bands.npy': (22, 2000, 2000, 10), 'masks.npy': (22, 2000, 2000), 'doys.npy': (22,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32646_r14_c4_sr1_sc4
+Dimensions: {'bands.npy': (6, 2000, 2000, 10), 'masks.npy': (6, 2000, 2000), 'doys.npy': (6,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32644_r39_c3_sr3_sc1
+Dimensions: {'bands.npy': (14, 2000, 2000, 10), 'masks.npy': (14, 2000, 2000), 'doys.npy': (14,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32646_r14_c5_sr4_sc0
+Dimensions: {'bands.npy': (9, 2000, 2000, 10), 'masks.npy': (9, 2000, 2000), 'doys.npy': (9,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32646_r12_c4_sr1_sc3
+Dimensions: {'bands.npy': (6, 2000, 2000, 10), 'masks.npy': (6, 2000, 2000), 'doys.npy': (6,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32644_r38_c3_sr3_sc4
+Dimensions: {'bands.npy': (24, 2000, 2000, 10), 'masks.npy': (24, 2000, 2000), 'doys.npy': (24,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32646_r10_c4_sr0_sc3
+Dimensions: {'bands.npy': (12, 2000, 2000, 10), 'masks.npy': (12, 2000, 2000), 'doys.npy': (12,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32646_r9_c5_sr0_sc2
+Dimensions: {'bands.npy': (17, 2000, 2000, 10), 'masks.npy': (17, 2000, 2000), 'doys.npy': (17,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32646_r29_c2_sr2_sc1
+Dimensions: {'sar_ascending.npy': (0, 2000, 2000, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (13, 2000, 2000, 2), 'sar_descending_doy.npy': (13,)}
+Errors:
+  - Error loading bands.npy: mmap length is greater than file size
+  - Error loading masks.npy: mmap length is greater than file size
+  - Missing doys.npy
+
+Year: 2016, Tile: zone32646_r14_c4_sr4_sc3
+Dimensions: {'bands.npy': (7, 2000, 2000, 10), 'masks.npy': (7, 2000, 2000), 'doys.npy': (7,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32646_r14_c4_sr0_sc3
+Dimensions: {'bands.npy': (7, 2000, 2000, 10), 'masks.npy': (7, 2000, 2000), 'doys.npy': (7,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32643_r39_c7_sr0_sc2
+Dimensions: {'sar_ascending.npy': (0, 2000, 2000, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (8, 2000, 2000, 2), 'sar_descending_doy.npy': (8,)}
+Errors:
+  - Error loading bands.npy: mmap length is greater than file size
+  - Error loading masks.npy: mmap length is greater than file size
+  - Missing doys.npy
+
+Year: 2016, Tile: zone32646_r12_c4_sr4_sc3
+Dimensions: {'bands.npy': (5, 2000, 2000, 10), 'masks.npy': (5, 2000, 2000), 'doys.npy': (5,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32647_r32_c2_sr1_sc1
+Dimensions: {'bands.npy': (27, 2000, 2000, 10), 'masks.npy': (27, 2000, 2000), 'doys.npy': (27,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32646_r12_c4_sr0_sc3
+Dimensions: {'bands.npy': (7, 2000, 2000, 10), 'masks.npy': (7, 2000, 2000), 'doys.npy': (7,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32646_r14_c5_sr1_sc0
+Dimensions: {'bands.npy': (7, 2000, 2000, 10), 'masks.npy': (7, 2000, 2000), 'doys.npy': (7,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32646_r13_c5_sr0_sc0
+Dimensions: {'bands.npy': (7, 2000, 2000, 10), 'masks.npy': (7, 2000, 2000), 'doys.npy': (7,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32646_r11_c4_sr4_sc1
+Dimensions: {'bands.npy': (11, 2000, 2000, 10), 'masks.npy': (11, 2000, 2000), 'doys.npy': (11,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32644_r38_c3_sr4_sc2
+Dimensions: {'bands.npy': (12, 2000, 2000, 10), 'masks.npy': (12, 2000, 2000), 'doys.npy': (12,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32644_r39_c4_sr1_sc2
+Dimensions: {'bands.npy': (21, 2000, 2000, 10), 'masks.npy': (21, 2000, 2000), 'doys.npy': (21,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32644_r37_c3_sr4_sc1
+Dimensions: {'bands.npy': (15, 2000, 2000, 10), 'masks.npy': (15, 2000, 2000), 'doys.npy': (15,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32644_r38_c3_sr4_sc4
+Dimensions: {'bands.npy': (34, 2000, 2000, 10), 'masks.npy': (34, 2000, 2000), 'doys.npy': (34,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32643_r12_c2_sr2_sc2
+Dimensions: {'bands.npy': (4, 2000, 2000, 10), 'masks.npy': (4, 2000, 2000), 'doys.npy': (4,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32646_r15_c4_sr0_sc4
+Dimensions: {'bands.npy': (9, 2000, 2000, 10), 'masks.npy': (9, 2000, 2000), 'doys.npy': (9,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32647_r32_c2_sr3_sc0
+Dimensions: {'bands.npy': (22, 2000, 2000, 10), 'masks.npy': (22, 2000, 2000), 'doys.npy': (22,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32643_r11_c2_sr3_sc1
+Dimensions: {'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - Missing bands.npy
+  - Missing masks.npy
+  - Missing doys.npy
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32646_r9_c5_sr0_sc0
+Dimensions: {'bands.npy': (8, 2000, 2000, 10), 'masks.npy': (8, 2000, 2000), 'doys.npy': (8,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32646_r13_c4_sr0_sc3
+Dimensions: {'bands.npy': (7, 2000, 2000, 10), 'masks.npy': (7, 2000, 2000), 'doys.npy': (7,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32643_r27_c4_sr2_sc4
+Dimensions: {'sar_ascending.npy': (0, 2000, 2000, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (18, 2000, 2000, 2), 'sar_descending_doy.npy': (18,)}
+Errors:
+  - Error loading bands.npy: mmap length is greater than file size
+  - Error loading masks.npy: mmap length is greater than file size
+  - Missing doys.npy
+
+Year: 2016, Tile: zone32644_r38_c3_sr0_sc2
+Dimensions: {'bands.npy': (22, 2000, 2000, 10), 'masks.npy': (22, 2000, 2000), 'doys.npy': (22,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32643_r12_c1_sr4_sc4
+Dimensions: {'bands.npy': (4, 2000, 2000, 10), 'masks.npy': (4, 2000, 2000), 'doys.npy': (4,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32644_r39_c4_sr0_sc0
+Dimensions: {'bands.npy': (26, 2000, 2000, 10), 'masks.npy': (26, 2000, 2000), 'doys.npy': (26,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32646_r14_c4_sr2_sc3
+Dimensions: {'bands.npy': (8, 2000, 2000, 10), 'masks.npy': (8, 2000, 2000), 'doys.npy': (8,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32644_r37_c3_sr4_sc3
+Dimensions: {'bands.npy': (31, 2000, 2000, 10), 'masks.npy': (31, 2000, 2000), 'doys.npy': (31,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32646_r13_c4_sr2_sc4
+Dimensions: {'bands.npy': (7, 2000, 2000, 10), 'masks.npy': (7, 2000, 2000), 'doys.npy': (7,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32644_r39_c4_sr0_sc1
+Dimensions: {'bands.npy': (31, 2000, 2000, 10), 'masks.npy': (31, 2000, 2000), 'doys.npy': (31,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32643_r11_c3_sr4_sc2
+Dimensions: {'bands.npy': (4, 2000, 2000, 10), 'masks.npy': (4, 2000, 2000), 'doys.npy': (4,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32644_r38_c4_sr2_sc0
+Dimensions: {'bands.npy': (31, 2000, 2000, 10), 'masks.npy': (31, 2000, 2000), 'doys.npy': (31,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32646_r8_c5_sr4_sc3
+Dimensions: {'bands.npy': (13, 2000, 2000, 10), 'masks.npy': (13, 2000, 2000), 'doys.npy': (13,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32646_r11_c4_sr3_sc1
+Dimensions: {'bands.npy': (11, 2000, 2000, 10), 'masks.npy': (11, 2000, 2000), 'doys.npy': (11,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32647_r32_c2_sr1_sc2
+Dimensions: {'bands.npy': (9, 2000, 2000, 10), 'masks.npy': (9, 2000, 2000), 'doys.npy': (9,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32643_r12_c1_sr0_sc4
+Dimensions: {'bands.npy': (3, 2000, 2000, 10), 'masks.npy': (3, 2000, 2000), 'doys.npy': (3,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32646_r7_c5_sr3_sc3
+Dimensions: {'bands.npy': (10, 2000, 2000, 10), 'masks.npy': (10, 2000, 2000), 'doys.npy': (10,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32644_r37_c3_sr3_sc3
+Dimensions: {'bands.npy': (27, 2000, 2000, 10), 'masks.npy': (27, 2000, 2000), 'doys.npy': (27,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32646_r12_c4_sr3_sc3
+Dimensions: {'bands.npy': (7, 2000, 2000, 10), 'masks.npy': (7, 2000, 2000), 'doys.npy': (7,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32644_r39_c3_sr3_sc3
+Dimensions: {'bands.npy': (14, 2000, 2000, 10), 'masks.npy': (14, 2000, 2000), 'doys.npy': (14,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32646_r31_c5_sr2_sc0
+Dimensions: {'bands.npy': (29, 2000, 2000, 10), 'masks.npy': (29, 2000, 2000), 'doys.npy': (29,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32646_r31_c5_sr3_sc1
+Dimensions: {'bands.npy': (32, 2000, 2000, 10), 'masks.npy': (32, 2000, 2000), 'doys.npy': (32,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2016, Tile: zone32643_r40_c5_sr4_sc2
+Dimensions: {'bands.npy': (18, 2000, 2000, 10), 'masks.npy': (18, 2000, 2000), 'doys.npy': (18,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2021, Tile: zone32643_r12_c1_sr4_sc4
+Dimensions: {'bands.npy': (20, 2000, 2000, 10), 'masks.npy': (20, 2000, 2000), 'doys.npy': (20,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2021, Tile: zone32643_r11_c2_sr3_sc1
+Dimensions: {'bands.npy': (15, 2000, 2000, 10), 'masks.npy': (15, 2000, 2000), 'doys.npy': (15,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2021, Tile: zone32643_r12_c1_sr0_sc4
+Dimensions: {'bands.npy': (18, 2000, 2000, 10), 'masks.npy': (18, 2000, 2000), 'doys.npy': (18,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2021, Tile: zone32643_r11_c3_sr4_sc2
+Dimensions: {'bands.npy': (19, 2000, 2000, 10), 'masks.npy': (19, 2000, 2000), 'doys.npy': (19,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2021, Tile: zone32643_r12_c2_sr2_sc2
+Dimensions: {'bands.npy': (22, 2000, 2000, 10), 'masks.npy': (22, 2000, 2000), 'doys.npy': (22,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2017, Tile: zone32643_r12_c1_sr4_sc4
+Dimensions: {'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - Missing bands.npy
+  - Missing masks.npy
+  - Missing doys.npy
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2017, Tile: zone32643_r12_c1_sr0_sc4
+Dimensions: {'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - Missing bands.npy
+  - Missing masks.npy
+  - Missing doys.npy
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2017, Tile: zone32643_r12_c2_sr2_sc2
+Dimensions: {'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - Missing bands.npy
+  - Missing masks.npy
+  - Missing doys.npy
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2017, Tile: zone32643_r11_c3_sr4_sc2
+Dimensions: {'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - Missing bands.npy
+  - Missing masks.npy
+  - Missing doys.npy
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2017, Tile: zone32643_r11_c2_sr3_sc1
+Dimensions: {'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - Missing bands.npy
+  - Missing masks.npy
+  - Missing doys.npy
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2018, Tile: zone32643_r12_c2_sr2_sc2
+Dimensions: {'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - Missing bands.npy
+  - Missing masks.npy
+  - Missing doys.npy
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2018, Tile: zone32643_r11_c2_sr3_sc1
+Dimensions: {'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - Missing bands.npy
+  - Missing masks.npy
+  - Missing doys.npy
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2018, Tile: zone32643_r12_c1_sr4_sc4
+Dimensions: {'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - Missing bands.npy
+  - Missing masks.npy
+  - Missing doys.npy
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2018, Tile: zone32643_r11_c3_sr4_sc2
+Dimensions: {'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - Missing bands.npy
+  - Missing masks.npy
+  - Missing doys.npy
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2018, Tile: zone32643_r12_c1_sr0_sc4
+Dimensions: {'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - Missing bands.npy
+  - Missing masks.npy
+  - Missing doys.npy
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2023, Tile: zone32643_r12_c1_sr4_sc4
+Dimensions: {'bands.npy': (55, 2000, 2000, 10), 'masks.npy': (55, 2000, 2000), 'doys.npy': (55,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2023, Tile: zone32643_r12_c1_sr0_sc4
+Dimensions: {'bands.npy': (56, 2000, 2000, 10), 'masks.npy': (56, 2000, 2000), 'doys.npy': (56,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2023, Tile: zone32643_r12_c2_sr2_sc2
+Dimensions: {'bands.npy': (49, 2000, 2000, 10), 'masks.npy': (49, 2000, 2000), 'doys.npy': (49,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2023, Tile: zone32643_r11_c3_sr4_sc2
+Dimensions: {'bands.npy': (46, 2000, 2000, 10), 'masks.npy': (46, 2000, 2000), 'doys.npy': (46,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+Year: 2023, Tile: zone32643_r11_c2_sr3_sc1
+Dimensions: {'bands.npy': (48, 2000, 2000, 10), 'masks.npy': (48, 2000, 2000), 'doys.npy': (48,), 'sar_ascending.npy': (0, 868, 782, 2), 'sar_ascending_doy.npy': (0,), 'sar_descending.npy': (0, 868, 782, 2), 'sar_descending_doy.npy': (0,)}
+Errors:
+  - sar_ascending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+  - sar_descending.npy has wrong spatial dimensions: 868x782 (expected 2000x2000)
+
+================================================================================
+INVALID TILES CSV FORMAT (tile_id,year)
+================================================================================
+zone32643_r12_c1_sr4_sc4,2020
+zone32643_r11_c2_sr3_sc1,2020
+zone32643_r12_c1_sr0_sc4,2020
+zone32643_r11_c3_sr4_sc2,2020
+zone32643_r12_c2_sr2_sc2,2020
+zone32643_r12_c1_sr4_sc4,2019
+zone32643_r12_c1_sr0_sc4,2019
+zone32643_r12_c2_sr2_sc2,2019
+zone32643_r11_c3_sr4_sc2,2019
+zone32643_r11_c2_sr3_sc1,2019
+zone32643_r12_c1_sr0_sc4,2024
+zone32643_r11_c3_sr4_sc2,2024
+zone32643_r12_c1_sr4_sc4,2024
+zone32643_r11_c2_sr3_sc1,2024
+zone32643_r12_c2_sr2_sc2,2024
+zone32643_r12_c1_sr4_sc4,2022
+zone32643_r11_c2_sr3_sc1,2022
+zone32643_r12_c1_sr0_sc4,2022
+zone32643_r11_c3_sr4_sc2,2022
+zone32643_r12_c2_sr2_sc2,2022
+zone32646_r14_c4_sr0_sc4,2016
+zone32643_r41_c5_sr0_sc1,2016
+zone32646_r14_c4_sr1_sc4,2016
+zone32644_r39_c3_sr3_sc1,2016
+zone32646_r14_c5_sr4_sc0,2016
+zone32646_r12_c4_sr1_sc3,2016
+zone32644_r38_c3_sr3_sc4,2016
+zone32646_r10_c4_sr0_sc3,2016
+zone32646_r9_c5_sr0_sc2,2016
+zone32646_r29_c2_sr2_sc1,2016
+zone32646_r14_c4_sr4_sc3,2016
+zone32646_r14_c4_sr0_sc3,2016
+zone32643_r39_c7_sr0_sc2,2016
+zone32646_r12_c4_sr4_sc3,2016
+zone32647_r32_c2_sr1_sc1,2016
+zone32646_r12_c4_sr0_sc3,2016
+zone32646_r14_c5_sr1_sc0,2016
+zone32646_r13_c5_sr0_sc0,2016
+zone32646_r11_c4_sr4_sc1,2016
+zone32644_r38_c3_sr4_sc2,2016
+zone32644_r39_c4_sr1_sc2,2016
+zone32644_r37_c3_sr4_sc1,2016
+zone32644_r38_c3_sr4_sc4,2016
+zone32643_r12_c2_sr2_sc2,2016
+zone32646_r15_c4_sr0_sc4,2016
+zone32647_r32_c2_sr3_sc0,2016
+zone32643_r11_c2_sr3_sc1,2016
+zone32646_r9_c5_sr0_sc0,2016
+zone32646_r13_c4_sr0_sc3,2016
+zone32643_r27_c4_sr2_sc4,2016
+zone32644_r38_c3_sr0_sc2,2016
+zone32643_r12_c1_sr4_sc4,2016
+zone32644_r39_c4_sr0_sc0,2016
+zone32646_r14_c4_sr2_sc3,2016
+zone32644_r37_c3_sr4_sc3,2016
+zone32646_r13_c4_sr2_sc4,2016
+zone32644_r39_c4_sr0_sc1,2016
+zone32643_r11_c3_sr4_sc2,2016
+zone32644_r38_c4_sr2_sc0,2016
+zone32646_r8_c5_sr4_sc3,2016
+zone32646_r11_c4_sr3_sc1,2016
+zone32647_r32_c2_sr1_sc2,2016
+zone32643_r12_c1_sr0_sc4,2016
+zone32646_r7_c5_sr3_sc3,2016
+zone32644_r37_c3_sr3_sc3,2016
+zone32646_r12_c4_sr3_sc3,2016
+zone32644_r39_c3_sr3_sc3,2016
+zone32646_r31_c5_sr2_sc0,2016
+zone32646_r31_c5_sr3_sc1,2016
+zone32643_r40_c5_sr4_sc2,2016
+zone32643_r12_c1_sr4_sc4,2021
+zone32643_r11_c2_sr3_sc1,2021
+zone32643_r12_c1_sr0_sc4,2021
+zone32643_r11_c3_sr4_sc2,2021
+zone32643_r12_c2_sr2_sc2,2021
+zone32643_r12_c1_sr4_sc4,2017
+zone32643_r12_c1_sr0_sc4,2017
+zone32643_r12_c2_sr2_sc2,2017
+zone32643_r11_c3_sr4_sc2,2017
+zone32643_r11_c2_sr3_sc1,2017
+zone32643_r12_c2_sr2_sc2,2018
+zone32643_r11_c2_sr3_sc1,2018
+zone32643_r12_c1_sr4_sc4,2018
+zone32643_r11_c3_sr4_sc2,2018
+zone32643_r12_c1_sr0_sc4,2018
+zone32643_r12_c1_sr4_sc4,2023
+zone32643_r12_c1_sr0_sc4,2023
+zone32643_r12_c2_sr2_sc2,2023
+zone32643_r11_c3_sr4_sc2,2023
+zone32643_r11_c2_sr3_sc1,2023
