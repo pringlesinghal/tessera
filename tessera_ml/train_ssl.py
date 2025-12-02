@@ -133,13 +133,14 @@ def main():
     # Log source code artifacts
     if not args_cli.dry_run:
         artifact = wandb.Artifact("source-code", type="source")
-        artifact.add_file("tessera/tessera_ml/train_ssl.py")
-        artifact.add_file("tessera/tessera_ml/dataset.py")
-        artifact.add_file("tessera/tessera_ml/models/modules.py")
-        artifact.add_file("tessera/tessera_ml/models/ssl_model.py")
-        artifact.add_file("tessera/tessera_ml/utils/lr_scheduler.py")
-        artifact.add_file("tessera/tessera_ml/utils/metrics.py")
-        artifact.add_file("tessera/tessera_ml/utils/misc.py")
+        script_dir = Path(__file__).parent
+        artifact.add_file(str(script_dir / "train_ssl.py"))
+        artifact.add_file(str(script_dir / "dataset.py"))
+        artifact.add_file(str(script_dir / "models" / "modules.py"))
+        artifact.add_file(str(script_dir / "models" / "ssl_model.py"))
+        artifact.add_file(str(script_dir / "utils" / "lr_scheduler.py"))
+        artifact.add_file(str(script_dir / "utils" / "metrics.py"))
+        artifact.add_file(str(script_dir / "utils" / "misc.py"))
         wandb.log_artifact(artifact)
 
     # Initialize Dataset
