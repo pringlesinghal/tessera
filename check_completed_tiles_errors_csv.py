@@ -11,7 +11,7 @@ from pathlib import Path
 
 # File paths
 COMPLETED_TILES_FILE = Path("shapefiles/india_tiles/mgrs_tiles/completed_tiles.txt")
-VALIDATION_REPORT_FILE = Path("validation_report.txt")
+VALIDATION_REPORT_FILE = Path("validation_report_completed.txt")
 OUTPUT_FILE = Path("tiles_with_errors.txt")
 
 
