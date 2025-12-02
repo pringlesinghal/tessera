@@ -20,12 +20,18 @@ import torch.cuda.amp as amp
 import wandb
 
 # Modified imports for local structure
-from .dataset import TreeDataset
-from .models.modules import TransformerEncoder, ProjectionHead, SpectralTemporalTransformer, SimpleMLP
-from .models.ssl_model import MultimodalBTModel, BarlowTwinsLoss, compute_cross_correlation
-from .utils.lr_scheduler import adjust_learning_rate
-from .utils.metrics import linear_probe_evaluate, rankme
-from .utils.misc import remove_dir, save_checkpoint, plot_cross_corr
+# Use absolute imports to allow running as a script
+import sys
+from pathlib import Path
+# Add parent directory to path to enable imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from tessera_ml.dataset import TreeDataset
+from tessera_ml.models.modules import TransformerEncoder, ProjectionHead, SpectralTemporalTransformer, SimpleMLP
+from tessera_ml.models.ssl_model import MultimodalBTModel, BarlowTwinsLoss, compute_cross_correlation
+from tessera_ml.utils.lr_scheduler import adjust_learning_rate
+from tessera_ml.utils.metrics import linear_probe_evaluate, rankme
+from tessera_ml.utils.misc import remove_dir, save_checkpoint, plot_cross_corr
 import matplotlib.pyplot as plt
 
 # Default Configuration
