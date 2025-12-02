@@ -52,7 +52,7 @@ class TreeDataset(Dataset):
 
         # 1. Scan Index Files
         print(f"Scanning index files in {self.index_dir}...")
-        self.index_files = sorted(list(self.index_dir.glob("part-*.parquet")))
+        self.index_files = sorted(list(self.index_dir.glob("part.*.parquet")))
         if not self.index_files:
             raise FileNotFoundError(f"No .parquet files found in {self.index_dir}")
 
