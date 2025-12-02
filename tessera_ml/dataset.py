@@ -11,6 +11,10 @@ import pyarrow.parquet as pq
 import time
 import logging
 
+# Setup logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
 # Normalization parameters
 S2_BAND_MEAN = np.array([1711.0938, 1308.8511, 1546.4543, 3010.1293, 3106.5083,
                          2068.3044, 2685.0845, 2931.5889, 2514.6928, 1899.4922], dtype=np.float32)
