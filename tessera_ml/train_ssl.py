@@ -132,7 +132,7 @@ def main():
 
     # Log source code artifacts
     if not args_cli.dry_run:
-        artifact = wandb.Artifact("source-code", type="code")
+        artifact = wandb.Artifact("source-code", type="source")
         artifact.add_file("tessera/tessera_ml/train_ssl.py")
         artifact.add_file("tessera/tessera_ml/dataset.py")
         artifact.add_file("tessera/tessera_ml/models/modules.py")
