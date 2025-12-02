@@ -43,12 +43,18 @@ class TreeDataset(Dataset):
                  sample_size_s2=20, sample_size_s1=20, normalize=True):
         """
         Args:
-            year (int): Fixed year to load (e.g. 2023). If None, will pick randomly from 'years'.
-            years (list): List of years to sample from if year is None.
-            sample_size_s2 (int): Number of S2 time steps to sample.
-            sample_size_s1 (int): Number of S1 time steps to sample.
-            normalize (bool): Whether to apply normalization.
+            index_dir: Directory containing parquet index files
+            data_dir: Root directory containing year subdirectories with tile data
+            year: If specified, only use this year. Otherwise random.
+            years: If specified, list of years to sample from. Otherwise all available.
+            cache_size: Number of tiles to keep in memory
+            sample_size_s2: Number of timesteps to sample for S2
+            sample_size_s1: Number of timesteps to sample for S1
+            normalize: Whether to normalize the data
         """
+        
+        # Setup corrupted tiles log file
+        self.corrupted_log_path = Path(data_dir) / "corrupted_tiles.txt"
         self.index_dir = Path(index_dir)
         self.data_dir = Path(data_dir)
         self.year = year
@@ -268,13 +274,25 @@ class TreeDataset(Dataset):
         row = row_data["row"]
         col = row_data["col"]
 
-        # 4. Load Tile Data (Cached)
+        # Load tile data
         try:
             tile_data = self._get_tile_data(tile_id, target_year)
-        except (FileNotFoundError, RuntimeError) as e:
-            # print(f"[WARN] Sample {global_idx} failed: {e}")
-            # Return zero tensors if tile load fails (to avoid crashing training)
-            # Or raise. Raising is safer for debugging.
+        except (ValueError, RuntimeError, OSError) as e:
+            # Skip corrupted or missing tiles
+            logger.warning(f"Skipping corrupted tile {tile_id} (year {target_year}): {e}")
+            
+            # Log to file for later investigation
+            try:
+                with open(self.corrupted_log_path, 'a') as f:
+                    f.write(f"{tile_id},{target_year}\n")
+            except Exception as log_err:
+                logger.error(f"Failed to log corrupted tile: {log_err}")
+            
+            # Return a random different sample instead
+            new_idx = (global_idx + 1) % len(self)
+            return self.__getitem__(new_idx, year_override=year_override)
+        except Exception as e:
+            logger.error(f"Unexpected error loading tile {tile_id}: {e}")
             raise e
 
         # 5. S2 Processing
