@@ -47,8 +47,8 @@ DEFAULT_CONFIG = {
     "projector_hidden_dim": 4096,
     "projector_out_dim": 4096,
     "min_valid_timesteps": 0,
-    "sample_size_s2": 20,
-    "sample_size_s1": 20,
+    "sample_size_s2": 40,
+    "sample_size_s1": 40,
     "num_workers": 4,
     "shuffle_tiles": True,
     "warmup_ratio": 0.1,
@@ -146,7 +146,7 @@ def main():
         num_encoder_layers=s2_num_layers,
         dim_feedforward=s2_dim_feedforward,
         dropout=0.1,
-        max_seq_len=config['sample_size_s2']
+        max_seq_len=config['sample_size_s2']  # Now 40
     ).to(device)
     
     s1_enc = TransformerEncoder(
@@ -156,7 +156,7 @@ def main():
         num_encoder_layers=s1_num_layers,
         dim_feedforward=s1_dim_feedforward,
         dropout=0.1,
-        max_seq_len=config['sample_size_s1']
+        max_seq_len=config['sample_size_s1']  # Now 40
     ).to(device)
     
     if config['fusion_method'] == 'concat':
