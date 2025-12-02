@@ -202,7 +202,7 @@ def main():
             batch_size=config['batch_size'],
             num_workers=config['num_workers'],
             drop_last=True,
-            shuffle=True # Shuffle is important here as dataset is map-style now (sort of, via __getitem__)
+            shuffle=False #since index is already globally shuffled
         )
         model.train()
         for batch_data in train_loader:

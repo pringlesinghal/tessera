@@ -1,4 +1,6 @@
 import os
+# tessera_ml/dataset.py
+
 import bisect
 from pathlib import Path
 import numpy as np
@@ -6,6 +8,8 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 import pyarrow.parquet as pq
+import time
+import logging
 
 # Normalization parameters
 S2_BAND_MEAN = np.array([1711.0938, 1308.8511, 1546.4543, 3010.1293, 3106.5083,
@@ -82,22 +86,25 @@ class TreeDataset(Dataset):
         if file_idx == self.current_file_idx:
             return
 
+        t0 = time.time()
         path = self.index_files[file_idx]
-        # print(f"[DEBUG] Loading index chunk: {path.name}")
         self.current_df = pd.read_parquet(path)
         self.current_file_idx = file_idx
+        logger.debug(f"Loaded index chunk {path.name} in {time.time()-t0:.3f}s")
 
     def _get_tile_data(self, tile_id, year):
         """
         Retrieves tile data arrays from cache or disk.
         Returns dictionary of memmap arrays.
         """
+        t0 = time.time()
         cache_key = f"{tile_id}_{year}"
 
         if cache_key in self.tile_cache:
             if cache_key in self.cache_queue:
                 self.cache_queue.remove(cache_key)
             self.cache_queue.append(cache_key)
+            logger.debug(f"Cache hit for {cache_key} in {time.time()-t0:.4f}s")
             return self.tile_cache[cache_key]
 
         # Evict if full
@@ -134,6 +141,7 @@ class TreeDataset(Dataset):
 
             self.tile_cache[cache_key] = arrays
             self.cache_queue.append(cache_key)
+            logger.debug(f"Loaded tile {cache_key} from disk in {time.time()-t0:.3f}s")
             return arrays
 
         except Exception as e:
@@ -234,6 +242,7 @@ class TreeDataset(Dataset):
         return self.__getitem__(idx, year_override=year)
 
     def __getitem__(self, global_idx, year_override=None):
+        t_total = time.time()
         # Determine year
         if year_override is not None:
             target_year = year_override
@@ -297,12 +306,18 @@ class TreeDataset(Dataset):
         s1_aug1 = self._process_s1_sample(sar_asc, sar_asc_doy, sar_desc, sar_desc_doy, self.sample_size_s1)
         s1_aug2 = self._process_s1_sample(sar_asc, sar_asc_doy, sar_desc, sar_desc_doy, self.sample_size_s1)
 
-        return {
+        result = {
             "s2_aug1": torch.from_numpy(s2_aug1),
             "s2_aug2": torch.from_numpy(s2_aug2),
             "s1_aug1": torch.from_numpy(s1_aug1),
             "s1_aug2": torch.from_numpy(s1_aug2)
         }
+        
+        t_elapsed = time.time() - t_total
+        if global_idx % 1000 == 0:  # Log every 1000 samples
+            logger.info(f"Sample {global_idx} loaded in {t_elapsed:.4f}s")
+        
+        return result
 
 
 if __name__ == "__main__":
