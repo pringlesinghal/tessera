@@ -7,88 +7,100 @@ import torch
 from torch.utils.data import Dataset
 import pyarrow.parquet as pq
 
+# Normalization parameters
+S2_BAND_MEAN = np.array([1711.0938, 1308.8511, 1546.4543, 3010.1293, 3106.5083,
+                         2068.3044, 2685.0845, 2931.5889, 2514.6928, 1899.4922], dtype=np.float32)
+S2_BAND_STD = np.array([1926.1026, 1862.9751, 1803.1792, 1741.7837, 1677.4543,
+                        1888.7862, 1736.3090, 1715.8104, 1514.5199, 1398.4779], dtype=np.float32)
+
+S1_BAND_MEAN = np.array([5484.0407, 3003.7812], dtype=np.float32)
+S1_BAND_STD = np.array([1871.2334, 1726.0670], dtype=np.float32)
+
 
 class TreeDataset(Dataset):
     """
-    Dataset for loading tree pixel timeseries from globally shuffled Parquet shards.
-
+    Dataset for multimodal (S2 + S1) time series training.
+    
     Structure:
     - Index: Directory of globally sorted/shuffled part-XXXX.parquet files.
     - Data:  Numpy files (bands.npy, etc.) stored in {data_dir}/{year}/{tile_id}/data_processed/
 
     Strategy: "Chunked Reading"
-    - Instead of loading the full 1.25B row index, we scan the file lengths.
-    - We map a global index `idx` to (file_index, local_index).
-    - We keep the *active* dataframe in memory.
-    - Since data is globally shuffled, sequential access (0->N) yields random samples.
+    - Scans index files to build a global map.
+    - Loads data on demand using LRU cache.
+    - Performs online temporal sampling to generate 'aug1' and 'aug2' views.
     """
 
-    def __init__(self, index_dir, data_dir, year=None, years=None, cache_size=50):
+    def __init__(self, index_dir, data_dir, year=None, years=None, cache_size=50,
+                 sample_size_s2=20, sample_size_s1=20, normalize=True):
         """
         Args:
             year (int): Fixed year to load (e.g. 2023). If None, will pick randomly from 'years'.
-            years (list): List of available years to sample from (e.g. [2016, 2017...]).
-                          Required if year is None.
+            years (list): List of years to sample from if year is None.
+            sample_size_s2 (int): Number of S2 time steps to sample.
+            sample_size_s1 (int): Number of S1 time steps to sample.
+            normalize (bool): Whether to apply normalization.
         """
         self.index_dir = Path(index_dir)
         self.data_dir = Path(data_dir)
         self.year = year
         self.years = years if years else list(range(2016, 2025))
         self.cache_size = cache_size
+        self.sample_size_s2 = sample_size_s2
+        self.sample_size_s1 = sample_size_s1
+        self.normalize = normalize
 
         # 1. Scan Index Files
         print(f"Scanning index files in {self.index_dir}...")
-        self.index_files = sorted(list(self.index_dir.glob("*.parquet")))
+        self.index_files = sorted(list(self.index_dir.glob("part-*.parquet")))
         if not self.index_files:
             raise FileNotFoundError(f"No .parquet files found in {self.index_dir}")
 
         # 2. Build Cumulative Index (Lightweight)
-        # We need to know how many rows are in each file to support random access __getitem__
         self.file_offsets = [0]
         total_rows = 0
 
         for f in self.index_files:
-            # Use PyArrow to read metadata only (fast)
             meta = pq.read_metadata(f)
             rows = meta.num_rows
             total_rows += rows
             self.file_offsets.append(total_rows)
 
         self.total_length = total_rows
-        print(
-            f"Index scanned. Total samples: {self.total_length:,} across {len(self.index_files)} files."
-        )
+        print(f"Found {self.total_length} samples across {len(self.index_files)} files.")
 
-        # 3. State for Index Caching
+        # 3. Cache State
         self.current_file_idx = -1
         self.current_df = None
-
-        # 4. Cache for Data Tiles
+        
+        # Tile Data Cache: { "tile_id_year": { "bands": memmap, ... } }
         self.tile_cache = {}
-        self.cache_queue = []
+        self.cache_queue = [] # For LRU eviction
 
     def _load_index_chunk(self, file_idx):
-        """Loads a specific parquet file into memory."""
+        """Loads a specific parquet index file into memory."""
         if file_idx == self.current_file_idx:
             return
 
-        # Load new file
         path = self.index_files[file_idx]
         # print(f"[DEBUG] Loading index chunk: {path.name}")
         self.current_df = pd.read_parquet(path)
         self.current_file_idx = file_idx
 
     def _get_tile_data(self, tile_id, year):
-        # Create a unique cache key combining tile_id and year
+        """
+        Retrieves tile data arrays from cache or disk.
+        Returns dictionary of memmap arrays.
+        """
         cache_key = f"{tile_id}_{year}"
 
-        # LRU Cache logic (Same as before)
         if cache_key in self.tile_cache:
             if cache_key in self.cache_queue:
                 self.cache_queue.remove(cache_key)
             self.cache_queue.append(cache_key)
             return self.tile_cache[cache_key]
 
+        # Evict if full
         if len(self.cache_queue) >= self.cache_size:
             oldest = self.cache_queue.pop(0)
             if oldest in self.tile_cache:
@@ -102,27 +114,21 @@ class TreeDataset(Dataset):
 
         try:
             arrays = {}
+            # S2 Data (Required)
             arrays["bands"] = np.load(tile_path / "bands.npy", mmap_mode="r")
             arrays["masks"] = np.load(tile_path / "masks.npy", mmap_mode="r")
             arrays["doys"] = np.load(tile_path / "doys.npy", mmap_mode="r")
-
+            
+            # S1 Data (Optional/Check existence)
             if (tile_path / "sar_ascending.npy").exists():
-                arrays["sar_asc"] = np.load(
-                    tile_path / "sar_ascending.npy", mmap_mode="r"
-                )
-                arrays["sar_asc_doy"] = np.load(
-                    tile_path / "sar_ascending_doy.npy", mmap_mode="r"
-                )
+                arrays["sar_asc"] = np.load(tile_path / "sar_ascending.npy", mmap_mode="r")
+                arrays["sar_asc_doy"] = np.load(tile_path / "sar_ascending_doy.npy", mmap_mode="r")
             else:
                 arrays["sar_asc"] = None
 
             if (tile_path / "sar_descending.npy").exists():
-                arrays["sar_desc"] = np.load(
-                    tile_path / "sar_descending.npy", mmap_mode="r"
-                )
-                arrays["sar_desc_doy"] = np.load(
-                    tile_path / "sar_descending_doy.npy", mmap_mode="r"
-                )
+                arrays["sar_desc"] = np.load(tile_path / "sar_descending.npy", mmap_mode="r")
+                arrays["sar_desc_doy"] = np.load(tile_path / "sar_descending_doy.npy", mmap_mode="r")
             else:
                 arrays["sar_desc"] = None
 
@@ -133,6 +139,93 @@ class TreeDataset(Dataset):
         except Exception as e:
             raise RuntimeError(f"Failed to load tile {tile_id}: {e}")
 
+    def _sample_indices(self, valid_indices, size):
+        """Samples `size` indices from `valid_indices` with replacement if needed."""
+        if len(valid_indices) == 0:
+            return np.array([], dtype=int)
+        
+        if len(valid_indices) < size:
+            # Resample with replacement to fill size
+            return np.random.choice(valid_indices, size, replace=True)
+        else:
+            # Sample without replacement
+            return np.random.choice(valid_indices, size, replace=False)
+
+    def _process_s2_sample(self, bands, masks, doys, indices):
+        """
+        Extracts S2 data for given indices, normalizes, and appends DOY.
+        Output: (T, 11)
+        """
+        if len(indices) == 0:
+            return np.zeros((self.sample_size_s2, 11), dtype=np.float32)
+
+        # Sort indices to preserve temporal order (optional but good practice)
+        indices = np.sort(indices)
+        
+        selected_bands = bands[indices].astype(np.float32) # (T, 10)
+        selected_doys = doys[indices].astype(np.float32)   # (T,)
+
+        if self.normalize:
+            selected_bands = (selected_bands - S2_BAND_MEAN) / (S2_BAND_STD + 1e-9)
+
+        # Append DOY
+        return np.hstack([selected_bands, selected_doys.reshape(-1, 1)])
+
+    def _process_s1_sample(self, asc_bands, asc_doys, desc_bands, desc_doys, size):
+        """
+        Combines Asc/Desc S1 data, samples `size` steps, normalizes, and appends DOY.
+        Output: (T, 3)
+        """
+        # 1. Collect all valid S1 observations
+        # We assume input bands are already sliced for the pixel [:, row, col, :]
+        # But we need to check validity (not all zeros)
+        
+        valid_obs = []
+        
+        # Helper to process one orbit direction
+        def collect_valid(bands, doys):
+            if bands is None: return
+            # Check for non-zero data (assuming 0 is missing/padding)
+            # Or just take all if we trust the file structure. 
+            # Usually S1 data is dense in the file but might be missing for some dates.
+            # Let's assume all entries in the .npy are valid acquisitions for that tile,
+            # but we need to check if the specific pixel has data (not nodata).
+            # A simple check is if sum(abs(bands)) > 0
+            
+            # Vectorized check for valid pixels in the time series
+            is_valid = np.any(bands != 0, axis=1) # (T,)
+            valid_idx = np.where(is_valid)[0]
+            
+            for idx in valid_idx:
+                valid_obs.append((bands[idx], doys[idx]))
+
+        collect_valid(asc_bands, asc_doys)
+        collect_valid(desc_bands, desc_doys)
+
+        if not valid_obs:
+            return np.zeros((size, 3), dtype=np.float32)
+
+        # 2. Sample
+        # We have a list of (band_data, doy).
+        # We need to pick `size` random ones.
+        indices = np.random.choice(len(valid_obs), size, replace=(len(valid_obs) < size))
+        indices = np.sort(indices) # Sort by index in the list (not necessarily time)
+        
+        # To sort by time, we should extract DOYs first
+        sampled_obs = [valid_obs[i] for i in indices]
+        
+        # Sort by DOY
+        sampled_obs.sort(key=lambda x: x[1])
+        
+        # 3. Construct Tensor
+        out_bands = np.array([x[0] for x in sampled_obs], dtype=np.float32)
+        out_doys = np.array([x[1] for x in sampled_obs], dtype=np.float32)
+        
+        if self.normalize:
+            out_bands = (out_bands - S1_BAND_MEAN) / (S1_BAND_STD + 1e-9)
+            
+        return np.hstack([out_bands, out_doys.reshape(-1, 1)])
+
     def __len__(self):
         return self.total_length
 
@@ -141,7 +234,7 @@ class TreeDataset(Dataset):
         return self.__getitem__(idx, year_override=year)
 
     def __getitem__(self, global_idx, year_override=None):
-        # Determine year: override > self.year > random
+        # Determine year
         if year_override is not None:
             target_year = year_override
         elif self.year is not None:
@@ -150,64 +243,65 @@ class TreeDataset(Dataset):
             target_year = int(np.random.choice(self.years))
 
         # 1. Map global_idx to file_idx and local_idx
-        # bisect_right returns insertion point.
-        # offsets: [0, 1000, 2000]
-        # idx 500 -> bisect_right gives 1. file_idx = 1-1 = 0.
         file_idx = bisect.bisect_right(self.file_offsets, global_idx) - 1
         local_idx = global_idx - self.file_offsets[file_idx]
 
-        # 2. Ensure correct index chunk is loaded
+        # 2. Load Index Chunk
         self._load_index_chunk(file_idx)
 
-        # 3. Get metadata
-        record = self.current_df.iloc[local_idx]
-        tile_id = record["tile_id"]
-        row = record["row"]
-        col = record["col"]
+        # 3. Get Tile Info
+        row_data = self.current_df.iloc[local_idx]
+        tile_id = row_data["tile_id"]
+        row = row_data["row"]
+        col = row_data["col"]
 
-        # 4. Get Data
+        # 4. Load Tile Data (Cached)
         try:
             tile_data = self._get_tile_data(tile_id, target_year)
         except (FileNotFoundError, RuntimeError) as e:
             # print(f"[WARN] Sample {global_idx} failed: {e}")
+            # Return zero tensors if tile load fails (to avoid crashing training)
+            # Or raise. Raising is safer for debugging.
             raise e
 
-        # 5. Slice & Return (Same as before)
-        bands_data = np.array(tile_data["bands"][:, row, col, :])
-        masks_data = np.array(tile_data["masks"][:, row, col])
-        doys_data = np.array(tile_data["doys"][:])
+        # 5. S2 Processing
+        bands_s2 = tile_data["bands"][:, row, col, :]
+        masks_s2 = tile_data["masks"][:, row, col]
+        doys_s2 = tile_data["doys"][:]
+        
+        # Identify valid S2 indices (mask == 1 is valid/cloud-free? 
+        # In previous code: mask==1 -> valid (2), mask==0 -> cloud (1).
+        # Let's check `_process_time_series` in previous version:
+        # if masks[t] == 1: new_mask[pos] = 2 (Valid)
+        # else: new_mask[pos] = 1 (Cloud)
+        # So mask==1 is the good data.
+        valid_s2_indices = np.where(masks_s2 == 1)[0]
+        
+        # Generate two views for S2
+        idx_s2_1 = self._sample_indices(valid_s2_indices, self.sample_size_s2)
+        idx_s2_2 = self._sample_indices(valid_s2_indices, self.sample_size_s2)
+        
+        s2_aug1 = self._process_s2_sample(bands_s2, masks_s2, doys_s2, idx_s2_1)
+        s2_aug2 = self._process_s2_sample(bands_s2, masks_s2, doys_s2, idx_s2_2)
 
-        if tile_data.get("sar_asc") is not None and tile_data["sar_asc"].shape[0] > 0:
-            sar_asc_data = torch.from_numpy(
-                np.array(tile_data["sar_asc"][:, row, col, :])
-            ).float()
-            sar_asc_doy = torch.from_numpy(np.array(tile_data["sar_asc_doy"][:])).long()
-        else:
-            sar_asc_data = None
-            sar_asc_doy = None
-
-        if tile_data.get("sar_desc") is not None and tile_data["sar_desc"].shape[0] > 0:
-            sar_desc_data = torch.from_numpy(
-                np.array(tile_data["sar_desc"][:, row, col, :])
-            ).float()
-            sar_desc_doy = torch.from_numpy(
-                np.array(tile_data["sar_desc_doy"][:])
-            ).long()
-        else:
-            sar_desc_data = None
-            sar_desc_doy = None
+        # 6. S1 Processing
+        # Extract S1 data if available
+        sar_asc = tile_data["sar_asc"][:, row, col, :] if tile_data["sar_asc"] is not None else None
+        sar_asc_doy = tile_data["sar_asc_doy"][:] if tile_data["sar_asc"] is not None else None
+        
+        sar_desc = tile_data["sar_desc"][:, row, col, :] if tile_data["sar_desc"] is not None else None
+        sar_desc_doy = tile_data["sar_desc_doy"][:] if tile_data["sar_desc"] is not None else None
+        
+        # Generate two views for S1
+        # Note: _process_s1_sample handles sampling internally because it combines asc/desc
+        s1_aug1 = self._process_s1_sample(sar_asc, sar_asc_doy, sar_desc, sar_desc_doy, self.sample_size_s1)
+        s1_aug2 = self._process_s1_sample(sar_asc, sar_asc_doy, sar_desc, sar_desc_doy, self.sample_size_s1)
 
         return {
-            "tile_id": tile_id,
-            "coords": torch.tensor([row, col], dtype=torch.long),
-            "year": target_year,
-            "bands": torch.from_numpy(bands_data).float(),
-            "masks": torch.from_numpy(masks_data).long(),
-            "doys": torch.from_numpy(doys_data).long(),
-            "sar_asc": sar_asc_data,
-            "sar_asc_doy": sar_asc_doy,
-            "sar_desc": sar_desc_data,
-            "sar_desc_doy": sar_desc_doy,
+            "s2_aug1": torch.from_numpy(s2_aug1),
+            "s2_aug2": torch.from_numpy(s2_aug2),
+            "s1_aug1": torch.from_numpy(s1_aug1),
+            "s1_aug2": torch.from_numpy(s1_aug2)
         }
 
 
@@ -220,32 +314,21 @@ if __name__ == "__main__":
     parser.add_argument("--data_dir", required=True)
     args = parser.parse_args()
 
-    print("\n--- Initializing Chunked Dataset (Random Year Mode) ---")
-    # Initialize with year=None to test random selection
+    print("\n--- Initializing TreeDataset (Multimodal) ---")
     ds = TreeDataset(args.index_dir, args.data_dir, year=None)
 
     if len(ds) > 0:
         print("\n--- Loading First Sample (Index 0) ---")
         idx = 0
+        start_t = time.time()
+        sample = ds[idx]
+        dur = time.time() - start_t
 
-        # Load twice to demonstrate random year variation
-        for i in range(2):
-            print(f"\n[Attempt {i+1}] Loading index {idx}...")
-            start_t = time.time()
-            sample = ds[idx]
-            dur = time.time() - start_t
-
-            print(f"Loaded sample {idx} in {dur:.4f} sec")
-            print(f"Tile: {sample['tile_id']}")
-            print(f"Year: {sample['year']}")
-            print(f"Coords: {sample['coords']}")
-            print(f"Bands Shape: {sample['bands'].shape}")
-
-            # Basic data check
-            if sample["bands"].shape[0] > 0:
-                print(f"First band mean: {sample['bands'][0].mean():.2f}")
-            else:
-                print("Warning: Bands are empty/missing")
+        print(f"Loaded sample {idx} in {dur:.4f} sec")
+        for k, v in sample.items():
+            print(f"{k}: {v.shape}, dtype={v.dtype}")
+            if v.shape[0] > 0:
+                print(f"  Mean: {v.mean():.2f}")
 
     else:
         print("Dataset is empty.")
