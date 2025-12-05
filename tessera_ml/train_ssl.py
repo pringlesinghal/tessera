@@ -91,6 +91,12 @@ def parse_args():
     parser.add_argument(
         "--dry_run", action="store_true", help="Run in dry-run mode (no wandb)"
     )
+    parser.add_argument(
+        "--resume_from",
+        type=str,
+        default=None,
+        help="Path to checkpoint to resume training from",
+    )
     return parser.parse_args()
 
 
@@ -248,6 +254,7 @@ def main():
 
     step = 0
     examples = 0
+    start_epoch = 0
     last_time = time.time()
     last_examples = 0
     rolling_loss = []
@@ -256,8 +263,33 @@ def main():
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     best_ckpt_path = os.path.join("checkpoints", "ssl", f"best_model_{timestamp}.pt")
 
+    # Load checkpoint if resuming
+    if args_cli.resume_from and os.path.exists(args_cli.resume_from):
+        logging.info(f"Resuming training from checkpoint: {args_cli.resume_from}")
+        checkpoint = torch.load(args_cli.resume_from, map_location=device)
+
+        model.load_state_dict(checkpoint["model_state_dict"])
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+
+        if scaler is not None and "scaler_state_dict" in checkpoint:
+            scaler.load_state_dict(checkpoint["scaler_state_dict"])
+
+        start_epoch = checkpoint.get("epoch", 0) + 1  # Start from next epoch
+        step = checkpoint.get("step", 0)
+        examples = checkpoint.get("examples", 0)
+        best_val_acc = checkpoint.get("best_val_acc", 0.0)
+
+        logging.info(
+            f"Resumed from epoch {start_epoch}, step {step}, examples {examples}"
+        )
+        logging.info(f"Best validation accuracy so far: {best_val_acc:.4f}")
+    elif args_cli.resume_from:
+        logging.warning(
+            f"Checkpoint not found at {args_cli.resume_from}, starting from scratch"
+        )
+
     # Training Loop
-    for epoch in range(config["epochs"]):
+    for epoch in range(start_epoch, start_epoch + config["epochs"]):
         train_loader = torch.utils.data.DataLoader(
             dataset_train,
             batch_size=config["batch_size"],
@@ -366,7 +398,39 @@ def main():
                 wandb.log(wandb_dict, step=step)
 
             step += 1
+
+        # Save checkpoint at the end of each epoch
+        epoch_ckpt_path = os.path.join(
+            "checkpoints", "ssl", f"checkpoint_epoch_{epoch}_step_{step}.pt"
+        )
+        save_checkpoint(
+            model=model,
+            optimizer=optimizer,
+            epoch=epoch,
+            step=step,
+            val_acc=best_val_acc,
+            ckpt_path=epoch_ckpt_path,
+            scaler=scaler,
+            examples=examples,
+            best_val_acc=best_val_acc,
+        )
+
         logging.info(f"Epoch {epoch} finished, current step = {step}")
+
+    # Save final checkpoint
+    final_ckpt_path = os.path.join("checkpoints", "ssl", f"final_model_{timestamp}.pt")
+    save_checkpoint(
+        model=model,
+        optimizer=optimizer,
+        epoch=config["epochs"] - 1,
+        step=step,
+        val_acc=best_val_acc,
+        ckpt_path=final_ckpt_path,
+        scaler=scaler,
+        examples=examples,
+        best_val_acc=best_val_acc,
+    )
+
     logging.info("Training completed.")
     wandb_run.finish()
 

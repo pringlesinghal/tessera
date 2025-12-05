@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch
 
+
 # generates and returns an image of the cross-correlation matrix
 # for the provided z0 and z1 arrays
 # z is (batch_size, latent_dim) array
@@ -18,23 +19,40 @@ def plot_cross_corr(z0, z1):
     C = np.matmul(z0.T, z1) / z0.shape[0]
     C = np.abs(C)
     fig, ax = plt.subplots()
-    im = ax.imshow(C, cmap='binary', interpolation='nearest')
+    im = ax.imshow(C, cmap="binary", interpolation="nearest")
     ax.set_title("Embeddings cross-correlation")
     plt.colorbar(im, ax=ax)
     return fig
+
 
 def remove_dir(dir_path):
     if os.path.exists(dir_path):
         shutil.rmtree(dir_path)
         logging.info(f"Removed directory: {dir_path}")
 
-def save_checkpoint(model, optimizer, epoch, step, val_acc, ckpt_path):
+
+def save_checkpoint(
+    model,
+    optimizer,
+    epoch,
+    step,
+    val_acc,
+    ckpt_path,
+    scaler=None,
+    examples=0,
+    best_val_acc=0.0,
+):
     os.makedirs(os.path.dirname(ckpt_path), exist_ok=True)
-    torch.save({
+    checkpoint = {
         "epoch": epoch,
         "step": step,
         "model_state_dict": model.state_dict(),
         "optimizer_state_dict": optimizer.state_dict(),
-        "val_acc": val_acc
-    }, ckpt_path)
+        "val_acc": val_acc,
+        "examples": examples,
+        "best_val_acc": best_val_acc,
+    }
+    if scaler is not None:
+        checkpoint["scaler_state_dict"] = scaler.state_dict()
+    torch.save(checkpoint, ckpt_path)
     logging.info(f"Saved checkpoint at {ckpt_path}")
