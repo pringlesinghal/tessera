@@ -1,4 +1,5 @@
 # Temporal Embeddings of Surface Spectra for Earth Representation and Analysis (TESSERA)
+This is my fork of Tessera for the CS229 project where I implement additional logic for tree pixel filtering using the Brandt tree cover map and create indexing strategies to train the Tessera foundation model on this tree pixel timeseries dataset. The main focus in on building a training data pipeline that can efficiently scale to tree pixels for a 100TB satellite timeseries dataset with highly random disk access patterns.
 <a name="readme-top"></a>
 <div>
     <a align="center">
