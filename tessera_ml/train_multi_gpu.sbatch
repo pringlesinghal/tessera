@@ -7,7 +7,7 @@
 #SBATCH --time=48:00:00
 #SBATCH --partition=serc
 #SBATCH --gpus-per-node=8
-#SBATCH -C GPU_SKU:H100_SXM5
+#SBATCH -C GPU_SKU:A100_SXM4
 #SBATCH --output=logs/train_fsdp_%j.log
 #SBATCH --error=logs/train_fsdp_%j.err
 
