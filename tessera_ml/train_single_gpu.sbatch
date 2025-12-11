@@ -15,7 +15,7 @@ set -euo pipefail
 
 # Configuration
 CONFIG_FILE="${1:-configs/ssl_config.py}"
-CONTAINER_IMAGE="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera"
+CONTAINER_IMAGE="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/ml_env.sif"
 
 echo "========================================"
 echo "SLURM Job ID: $SLURM_JOB_ID"

@@ -14,10 +14,16 @@ From: pytorch/pytorch:2.1.2-cuda12.1-cudnn8-runtime
     
     # Additional dependencies for FSDP training script
     pip install fvcore  # For FLOPs counting in train_ssl_multi_gpu.py
+    
+    # Verify torchrun is available
+    which torchrun || echo "Warning: torchrun not found in PATH"
+    python -c "import torch; print(f'PyTorch version: {torch.__version__}')" || echo "Warning: PyTorch import failed"
 
 %environment
     export LC_ALL=C
     export LANG=C.UTF-8
+    export PATH=/opt/conda/bin:$PATH
+    export PYTHONPATH=/opt/conda/lib/python3.10/site-packages:$PYTHONPATH
 
 %runscript
     exec "$@"
