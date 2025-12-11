@@ -744,7 +744,7 @@ def main():
             index_dir=config["index_dir"],
             data_dir=config["data_root"],
             year=None,
-            years=config.get("years", list(range(2017, 2025))),
+            years=config.get("years", list(range(2016, 2025))),
             sample_size_s2=config["sample_size_s2"],
             sample_size_s1=config["sample_size_s1"],
             normalize=True,
