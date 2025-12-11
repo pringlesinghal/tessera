@@ -52,9 +52,9 @@ nvidia-smi --list-gpus
 # Bind current directory, parent directory (for tessera_ml.dataset), and common data paths
 BIND_PATHS="$WORK_DIR:$WORK_DIR"
 BIND_PATHS="$BIND_PATHS,$(dirname $WORK_DIR):$(dirname $WORK_DIR)"
+BIND_PATHS="$BIND_PATHS,/scratch:/scratch"
 
 # Add additional bind paths if your data is elsewhere (uncomment and modify as needed)
-# BIND_PATHS="$BIND_PATHS,/scratch:/scratch"
 # BIND_PATHS="$BIND_PATHS,/path/to/your/data:/data"
 
 echo "Bind paths: $BIND_PATHS"
@@ -72,7 +72,7 @@ apptainer exec --nv \
         --standalone \
         --nnodes=1 \
         --nproc_per_node=$NUM_GPUS \
-        train_ssl_multi_gpu.py \
+        "$WORK_DIR/train_ssl_multi_gpu.py" \
         --config "$CONFIG_FILE"
 
 echo "========================================"
