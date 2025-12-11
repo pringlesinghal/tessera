@@ -155,7 +155,7 @@ def main():
         index_dir=config["index_dir"],
         data_dir=config["data_root"],
         year=None,  # Random year from years list
-        years=list(range(2017, 2025)),  # Use years 2017-2024
+        years=list(range(2016, 2025)),  # Use years 2017-2024
         sample_size_s2=config["sample_size_s2"],
         sample_size_s1=config["sample_size_s1"],
         normalize=True,
