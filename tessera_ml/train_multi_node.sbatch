@@ -18,7 +18,7 @@ CONFIG_FILE="${1:-configs/ssl_config.py}"
 GPUS_PER_NODE=8
 NUM_NODES=$SLURM_NNODES
 TOTAL_GPUS=$((NUM_NODES * GPUS_PER_NODE))
-CONTAINER_IMAGE="../ml_env.sif"
+CONTAINER_IMAGE="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera"
 
 echo "========================================"
 echo "SLURM Job ID: $SLURM_JOB_ID"
