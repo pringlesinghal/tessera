@@ -5,7 +5,7 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
 #SBATCH --time=24:00:00
-#SBATCH --partition=gpu
+#SBATCH --partition=serc
 #SBATCH --gpus-per-node=1
 #SBATCH -C GPU_SKU:H100_SXM5
 #SBATCH --output=logs/train_1gpu_%j.log
