@@ -7,9 +7,13 @@ From: pytorch/pytorch:2.1.2-cuda12.1-cudnn8-runtime
 
     # Install Python dependencies
     # Derived from imports in tessera-util/src/{train.py, dataset.py, models/, utils/}
+    # and train_ssl_multi_gpu.py requirements
     # Note: No requirements.txt found in source, so using latest compatible versions.
     pip install --upgrade pip
     pip install pandas numpy pyarrow scikit-learn wandb einops matplotlib tqdm scipy
+    
+    # Additional dependencies for FSDP training script
+    pip install fvcore  # For FLOPs counting in train_ssl_multi_gpu.py
 
 %environment
     export LC_ALL=C
