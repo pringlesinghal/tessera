@@ -14,28 +14,35 @@
 set -euo pipefail
 
 # Configuration
-CONFIG_FILE="${1:-configs/ssl_config.py}"
+CONFIG_FILE_ARG="${1:-configs/ssl_config.py}"
 GPUS_PER_NODE=8
 NUM_NODES=$SLURM_NNODES
 TOTAL_GPUS=$((NUM_NODES * GPUS_PER_NODE))
 CONTAINER_IMAGE="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/ml_env.sif"
+
+# Change to the tessera_ml directory (explicit path)
+cd /scratch/groups/dlobell/psinghal/sentineldownloader/tessera/tessera_ml
+WORK_DIR="$(pwd)"
+
+# Resolve config file path (make it absolute if it's relative)
+if [[ "$CONFIG_FILE_ARG" = /* ]]; then
+    CONFIG_FILE="$CONFIG_FILE_ARG"
+else
+    CONFIG_FILE="$WORK_DIR/$CONFIG_FILE_ARG"
+fi
 
 echo "========================================"
 echo "SLURM Job ID: $SLURM_JOB_ID"
 echo "Nodes: $SLURM_NODELIST ($NUM_NODES nodes)"
 echo "GPUs per node: $GPUS_PER_NODE"
 echo "Total GPUs: $TOTAL_GPUS"
+echo "Working directory: $WORK_DIR"
 echo "Config file: $CONFIG_FILE"
 echo "Container: $CONTAINER_IMAGE"
 echo "========================================"
 
 # Create logs directory if it doesn't exist
 mkdir -p logs
-
-# Change to the tessera_ml directory
-cd "$(dirname "$0")"
-WORK_DIR="$(pwd)"
-echo "Working directory: $WORK_DIR"
 
 # Set NCCL environment variables for multi-node training
 export NCCL_DEBUG=INFO
