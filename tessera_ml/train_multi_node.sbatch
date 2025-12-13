@@ -81,12 +81,16 @@ echo "========================================"
 echo "Starting multi-node training with torchrun in Apptainer..."
 echo "========================================"
 
-# Run training with torchrun (multi-node) inside container
 # Set PYTHONPATH to include parent directory (for tessera_ml imports) and current directory (for local imports)
+PARENT_DIR="$(dirname "$WORK_DIR")"
+export PYTHONPATH="$PARENT_DIR:$WORK_DIR${PYTHONPATH:+:$PYTHONPATH}"
+echo "PYTHONPATH: $PYTHONPATH"
+
+# Run training with torchrun (multi-node) inside container
 srun apptainer exec --nv \
     --bind "$BIND_PATHS" \
     --pwd "$WORK_DIR" \
-    --env PYTHONPATH="$(dirname "$WORK_DIR"):$WORK_DIR:$PYTHONPATH" \
+    --env PYTHONPATH="$PYTHONPATH" \
     "$CONTAINER_IMAGE" \
     torchrun \
         --nnodes=$NUM_NODES \
