@@ -4,24 +4,61 @@ This directory contains configuration files for training the TESSERA SSL model w
 
 ## Available Configurations
 
-### 1. `ssl_config.py` - Full Production Training
+### 1. `ssl_config_32k.py` - 32k Batch on 8x 40GB GPUs ⭐ **RECOMMENDED**
 
-**Use for**: Full-scale training on 8+ GPUs with all features enabled
+**Use for**: Production training with 32k effective batch size on 8x 40GB A100 GPUs
 
 **Key features:**
-- Large batch size (2048 per GPU)
-- Large projection head (16384 dims)
-- QAT enabled
-- Validation enabled
-- Optimized for production runs
+- Batch size: 256 per GPU
+- Gradient accumulation: 16 steps
+- Effective batch: 256 × 8 × 16 = **32,768**
+- FSDP memory sharding
+- AMP enabled
+- QAT enabled after warmup
 
 **Estimated time**: 
-- 8 A100 GPUs: ~4-6 hours per epoch (depending on dataset size)
-- Memory: ~20-25 GB per GPU
+- 8x 40GB A100 GPUs: ~6-8 hours per epoch
+- Memory: ~18 GB per GPU (safe for 40GB)
 
-### 2. `ssl_config_minimal.py` - Quick Testing
+**Command:**
+```bash
+sbatch train_multi_gpu.sbatch  # Uses this config by default
+```
 
-**Use for**: Debugging, testing changes, or single-GPU experiments
+### 2. `ssl_config_2gpu.py` - 2 GPU Testing
+
+**Use for**: Testing FSDP + gradient accumulation before scaling to 8 GPUs
+
+**Key features:**
+- Batch size: 256 per GPU
+- Gradient accumulation: 8 steps
+- Effective batch: 256 × 2 × 8 = **4,096**
+- Same architecture as 32k config
+- More frequent logging for debugging
+
+**Estimated time**:
+- 2x 40GB A100 GPUs: ~2-3 hours per epoch
+- Memory: ~18 GB per GPU
+
+**Command:**
+```bash
+sbatch train_2gpu.sbatch  # Uses this config by default
+```
+
+### 3. `ssl_config.py` - Full Production Training (Legacy)
+
+**Use for**: Reference config, can be used for 80GB GPUs without gradient accumulation
+
+**Key features:**
+- Large batch size (1024 per GPU)
+- No gradient accumulation
+- Requires 80GB GPUs or memory optimizations
+
+**Memory**: ~45 GB per GPU (requires 80GB A100s)
+
+### 4. `ssl_config_minimal.py` - Quick Testing
+
+**Use for**: Debugging, testing changes, or quick validation
 
 **Key features:**
 - Small batch size (32)
@@ -43,19 +80,34 @@ This directory contains configuration files for training the TESSERA SSL model w
 
 ## How to Use
 
-### Option 1: Use existing config
+### Recommended Workflow
+
+**Step 1: Test on 2 GPUs first**
 ```bash
-sbatch train_multi_gpu.sbatch configs/ssl_config.py
+sbatch train_2gpu.sbatch  # Uses ssl_config_2gpu.py by default
 ```
 
-### Option 2: Create your own config
+**Step 2: Scale to 8 GPUs for production**
+```bash
+sbatch train_multi_gpu.sbatch  # Uses ssl_config_32k.py by default
+```
+
+### Using Custom Configs
+
+**Option 1: Specify config as argument**
+```bash
+sbatch train_multi_gpu.sbatch configs/ssl_config.py
+sbatch train_2gpu.sbatch configs/my_custom_config.py
+```
+
+**Option 2: Create your own config**
 ```bash
 # Copy and modify
-cp configs/ssl_config_minimal.py configs/my_config.py
+cp configs/ssl_config_2gpu.py configs/my_config.py
 vim configs/my_config.py
 
 # Run with your config
-sbatch train_multi_gpu.sbatch configs/my_config.py
+sbatch train_2gpu.sbatch configs/my_config.py
 ```
 
 ## Critical Fields to Update
@@ -172,12 +224,13 @@ When running training:
 
 ## Best Practices
 
-1. ✅ **Start with minimal config** for testing
-2. ✅ **Use absolute paths** for data directories
-3. ✅ **Version control your configs** (use git)
-4. ✅ **Comment your changes** in config files
-5. ✅ **Keep separate configs** for different experiments
-6. ✅ **Test on single GPU** before multi-GPU runs
+1. ✅ **Test on 2 GPUs first** - Validate FSDP + gradient accumulation work
+2. ✅ **Then scale to 8 GPUs** - Once 2 GPU run is successful
+3. ✅ **Use absolute paths** for data directories
+4. ✅ **Version control your configs** (use git)
+5. ✅ **Comment your changes** in config files
+6. ✅ **Keep separate configs** for different experiments
+7. ⚠️ **Avoid single GPU with FSDP** - FSDP adds overhead without benefits on 1 GPU
 
 ## More Info
 

@@ -790,6 +790,7 @@ def main():
         model.train()
 
         # Main training loop
+        batch_idx = 0  # Track batch index for gradient accumulation
         for batch_data in train_loader:
             s2_aug1 = batch_data["s2_aug1"].to(device, non_blocking=True)
             s2_aug2 = batch_data["s2_aug2"].to(device, non_blocking=True)
@@ -840,10 +841,10 @@ def main():
 
             # Gradient accumulation setup
             gradient_accumulation_steps = config.get("gradient_accumulation_steps", 1)
-            is_accumulation_step = (idx + 1) % gradient_accumulation_steps != 0
+            is_accumulation_step = (batch_idx + 1) % gradient_accumulation_steps != 0
 
             # Only zero gradients at the start of accumulation cycle
-            if (idx % gradient_accumulation_steps) == 0:
+            if (batch_idx % gradient_accumulation_steps) == 0:
                 optimizer.zero_grad(set_to_none=True)
 
             qat_is_active_this_step = False
@@ -1265,6 +1266,9 @@ def main():
             # Only increment global step after completing a full accumulation cycle
             if not is_accumulation_step:
                 g_step += 1
+
+            # Always increment batch index (every micro-batch)
+            batch_idx += 1
 
         # End of epoch
         epoch_duration = time.time() - epoch_start_time
