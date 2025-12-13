@@ -52,6 +52,11 @@ export NCCL_NET="Socket"  # Force socket-based communication
 export NCCL_NSOCKS_PERTHREAD=4  # Number of sockets per thread
 export NCCL_SOCKET_NTHREADS=4  # Number of threads per socket
 
+# PyTorch distributed debugging
+export TORCH_DISTRIBUTED_DEBUG=DETAIL  # Verbose distributed debugging
+export TORCH_CPP_LOG_LEVEL=INFO  # C++ backend logging
+export TORCH_SHOW_CPP_STACKTRACES=1  # Show C++ stack traces on errors
+
 # Set OMP threads for better CPU performance
 export OMP_NUM_THREADS=4
 export MKL_NUM_THREADS=4

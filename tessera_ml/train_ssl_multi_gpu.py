@@ -878,11 +878,16 @@ def main():
             if is_accumulation_step:
                 # Don't sync gradients across GPUs yet
                 sync_context = model.no_sync()
+                if global_rank == 0 and batch_idx < 20:  # Debug: log first 20 batches
+                    logging.info(f"[DEBUG] Batch {batch_idx}: Using no_sync() (accumulating)")
             else:
                 # Use nullcontext on last step to allow normal gradient sync
                 sync_context = nullcontext()
+                if global_rank == 0 and batch_idx < 20:
+                    logging.info(f"[DEBUG] Batch {batch_idx}: Syncing gradients (optimizer step)")
 
-            with sync_context:
+            try:
+                with sync_context:
                 with torch.cuda.amp.autocast(enabled=apply_amp):
                     proj_feats1, repr1_f32 = model(s2_aug1, s1_aug1)
                     proj_feats2, repr2_f32 = model(s2_aug2, s1_aug2)
@@ -954,13 +959,23 @@ def main():
                         * (diff_a + diff_b)
                     )
 
+                    # Compute total loss (outside mixup block)
                     total_loss = loss_main + loss_mix
 
                     # Scale loss by accumulation steps to get correct gradient magnitude
                     scaled_loss = total_loss / gradient_accumulation_steps
 
-                # Backward pass
-                scaler.scale(scaled_loss).backward()
+                    # Backward pass (must be inside sync_context)
+                    scaler.scale(scaled_loss).backward()
+                    
+                    if global_rank == 0 and batch_idx < 20:
+                        logging.info(f"[DEBUG] Batch {batch_idx}: Backward completed, loss={total_loss.item():.4f}")
+                        
+            except Exception as e:
+                logging.error(f"[ERROR] Batch {batch_idx}, Rank {global_rank}: Error in forward/backward: {e}")
+                logging.error(f"[ERROR] FSDP state: {getattr(model, '_state', 'UNKNOWN')}")
+                logging.error(f"[ERROR] is_accumulation_step: {is_accumulation_step}")
+                raise
 
             # Only step optimizer on the last accumulation step
             if not is_accumulation_step:
@@ -970,6 +985,9 @@ def main():
                 )
                 scaler.step(optimizer)
                 scaler.update()
+                
+                if global_rank == 0 and batch_idx < 20:
+                    logging.info(f"[DEBUG] Batch {batch_idx}: Optimizer step completed")
 
             # Track examples (accumulate all micro-batches)
             current_batch_size_effective = s2_aug1.size(0) * world_size
