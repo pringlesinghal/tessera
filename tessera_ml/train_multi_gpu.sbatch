@@ -42,11 +42,16 @@ echo "========================================"
 # Create logs directory if it doesn't exist
 mkdir -p logs
 
-# Set NCCL environment variables for optimal performance
+# Set NCCL environment variables for Sherlock
+# For single-node multi-GPU, use NVLink/PCIe without InfiniBand
 export NCCL_DEBUG=INFO
-export NCCL_IB_DISABLE=0
-export NCCL_NET_GDR_LEVEL=3
-export NCCL_SOCKET_IFNAME=^docker0,lo
+export NCCL_IB_DISABLE=1  # Disable InfiniBand for single-node
+export NCCL_P2P_LEVEL=NVL  # Use NVLink if available, otherwise PCIe
+export NCCL_SOCKET_IFNAME=^docker0,lo  # Exclude docker and loopback interfaces
+export NCCL_IGNORE_DISABLED_P2P=1  # Ignore P2P capability check
+export NCCL_NET="Socket"  # Force socket-based communication
+export NCCL_NSOCKS_PERTHREAD=4  # Number of sockets per thread
+export NCCL_SOCKET_NTHREADS=4  # Number of threads per socket
 
 # Set OMP threads for better CPU performance
 export OMP_NUM_THREADS=4
@@ -55,9 +60,15 @@ export MKL_NUM_THREADS=4
 # CUDA memory allocator config to reduce fragmentation
 export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
 
-# Print GPU information
+# Print GPU and network information
 echo "Available GPUs:"
 nvidia-smi --list-gpus
+echo ""
+echo "Network interfaces:"
+ip addr show | grep -E '^[0-9]+:|inet ' || ifconfig -a | grep -E 'flags|inet '
+echo ""
+echo "GPU topology:"
+nvidia-smi topo -m || echo "GPU topology not available"
 
 # Set bind paths for container (adjust these for your data locations)
 # Bind current directory, parent directory (for tessera_ml.dataset), and common data paths
