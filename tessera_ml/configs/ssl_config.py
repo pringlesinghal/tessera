@@ -76,6 +76,11 @@ config = {
     "mixup_lambda": 1.0,
     "beta_alpha": 1.0,
     "beta_beta": 1.0,
+    # ========== Dataset Size ==========
+    # Total samples estimate (will be updated from actual dataset length)
+    # tessera-util used: 812 * 1000000 = 812 million samples
+    # For TreeDataset, this will be calculated automatically from the index files
+    "total_samples": None,  # Set to None to auto-calculate from dataset
     # ========== Performance Optimization ==========
     "apply_amp": False,  # Mixed precision training (set to True for faster training)
     "use_torch_compile": True,  # PyTorch 2.0+ compile (may not work with FSDP)

@@ -3,20 +3,76 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
 import math
-from einops import rearrange
+import numpy as np
 
 class AttentionPooling(nn.Module):
     def __init__(self, input_dim):
         super().__init__()
         self.query = nn.Linear(input_dim, 1)
     def forward(self, x):
-        # x: (B, seq_len, dim)
-        w = torch.softmax(self.query(x), dim=1)  # (B, seq_len, 1)
-        return (w * x).sum(dim=1)
-    
+        # More explicit operations
+        w = torch.softmax(self.query(x), dim=1)
+        weighted = w * x
+        return weighted.sum(dim=1)  # More explicit sum
+ 
+class ConvTemporalPooling(nn.Module):
+    """使用1D卷积捕获时序依赖的池化方法"""
+    def __init__(self, input_dim, kernel_sizes=[3, 5, 7]):
+        super().__init__()
+        num_kernels = len(kernel_sizes)
+        # Calculate dimensions more carefully to avoid mismatch
+        conv_out_dim_per_kernel = input_dim // num_kernels
+        # Total dimension after concatenation
+        total_conv_out_dim = conv_out_dim_per_kernel * num_kernels
+        
+        self.convs = nn.ModuleList([
+            nn.Conv1d(input_dim, conv_out_dim_per_kernel, 
+                     kernel_size=k, padding=k//2)
+            for k in kernel_sizes
+        ])
+        
+        # Use the actual concatenated dimension for query
+        self.query = nn.Linear(total_conv_out_dim, 1)
+        
+        # Add a projection layer to map back to original dimension if needed
+        self.proj_back = None
+        if total_conv_out_dim != input_dim:
+            self.proj_back = nn.Linear(total_conv_out_dim, input_dim)
+        
+    def forward(self, x):
+        # x: (B, T, D)
+        B, T, D = x.shape
+        if T == 0:
+            return torch.zeros(B, D, device=x.device)
+        elif T == 1:
+            return x.squeeze(1)
+            
+        # 转换为Conv1d格式: (B, D, T)
+        x_conv = x.transpose(1, 2)
+        
+        # 多尺度卷积提取时序特征
+        conv_outs = []
+        for conv in self.convs:
+            conv_outs.append(conv(x_conv))
+        
+        # 合并多尺度特征
+        x_multi = torch.cat(conv_outs, dim=1)  # (B, total_conv_out_dim, T)
+        x_multi = x_multi.transpose(1, 2)  # (B, T, total_conv_out_dim)
+        
+        # 计算注意力权重
+        w = torch.softmax(self.query(x_multi), dim=1)  # (B, T, 1)
+        
+        # If dimensions don't match, project the multi-scale features back
+        if self.proj_back is not None:
+            x_multi = self.proj_back(x_multi)  # (B, T, D)
+            # Apply attention to projected features
+            return (w * x_multi).sum(dim=1)  # (B, D)
+        else:
+            # Apply attention to original input
+            return (w * x).sum(dim=1)  # (B, D)
 
+   
 class TemporalAwarePooling(nn.Module):
     def __init__(self, input_dim):
         super().__init__()
@@ -24,39 +80,175 @@ class TemporalAwarePooling(nn.Module):
         self.temporal_context = nn.GRU(input_dim, input_dim, batch_first=True)
         
     def forward(self, x):
-        # 先通过RNN捕获时序上下文
-        x_context, _ = self.temporal_context(x)
-        # 再计算注意力权重
-        w = torch.softmax(self.query(x_context), dim=1)
-        return (w * x).sum(dim=1)
+        # Add safety check for sequence length
+        B, T, D = x.shape
+        if T == 0:
+            # Handle empty sequence case - return zeros
+            return torch.zeros(B, D, device=x.device)
+        elif T == 1:
+            # Handle single element sequence - skip GRU
+            return x.squeeze(1)
+        else:
+            # Normal case with multiple timesteps
+            try:
+                # Process through RNN to capture temporal context
+                x_context, _ = self.temporal_context(x)
+                # Calculate attention weights
+                w = torch.softmax(self.query(x_context), dim=1)
+                return (w * x).sum(dim=1)
+            except Exception as e:
+                # Fallback to mean pooling if RNN fails
+                print(f"RNN failed with error: {e}. Falling back to mean pooling, current x shape is {x.shape}, values are {x}")
+                return torch.mean(x, dim=1)
 
 
-class TemporalEncoding(nn.Module):
-    def __init__(self, d_model, num_freqs=64):
+class CustomGRUCell(nn.Module):
+    """自定义 GRU Cell 实现，仅使用基本 torch 操作"""
+    def __init__(self, input_size, hidden_size):
         super().__init__()
-        self.num_freqs = num_freqs
-        self.d_model = d_model
+        self.input_size = input_size
+        self.hidden_size = hidden_size
         
-        # 可学习的频率参数（比固定频率更灵活）
-        self.freqs = nn.Parameter(torch.exp(torch.linspace(0, np.log(365.0), num_freqs)))
+        # 输入到门的权重
+        self.W_ir = nn.Linear(input_size, hidden_size, bias=False)
+        self.W_iz = nn.Linear(input_size, hidden_size, bias=False)
+        self.W_ih = nn.Linear(input_size, hidden_size, bias=False)
         
-        # 通过线性层将傅里叶特征投影到目标维度
-        self.proj = nn.Linear(2 * num_freqs, d_model)
-        self.phase = nn.Parameter(torch.zeros(1, 1, d_model))  # 可学习相位偏移
+        # 隐藏状态到门的权重
+        self.W_hr = nn.Linear(hidden_size, hidden_size, bias=False)
+        self.W_hz = nn.Linear(hidden_size, hidden_size, bias=False)
+        self.W_hh = nn.Linear(hidden_size, hidden_size, bias=False)
+        
+        # 偏置
+        self.b_r = nn.Parameter(torch.zeros(hidden_size))
+        self.b_z = nn.Parameter(torch.zeros(hidden_size))
+        self.b_h = nn.Parameter(torch.zeros(hidden_size))
+        
+        # 初始化权重
+        self._init_weights()
+        
+    def _init_weights(self):
+        # 使用 Xavier 初始化
+        for name, param in self.named_parameters():
+            if 'weight' in name or name.startswith('W_'):
+                nn.init.xavier_uniform_(param)
+                
+    def forward(self, x_t, h_prev):
+        """
+        前向传播单个时间步
+        x_t: (batch_size, input_size)
+        h_prev: (batch_size, hidden_size)
+        """
+        # 重置门
+        r_t = torch.sigmoid(self.W_ir(x_t) + self.W_hr(h_prev) + self.b_r)
+        
+        # 更新门
+        z_t = torch.sigmoid(self.W_iz(x_t) + self.W_hz(h_prev) + self.b_z)
+        
+        # 候选隐藏状态
+        h_tilde = torch.tanh(self.W_ih(x_t) + self.W_hh(r_t * h_prev) + self.b_h)
+        
+        # 新的隐藏状态
+        h_t = (1 - z_t) * h_prev + z_t * h_tilde
+        
+        return h_t
 
-    def forward(self, doy):
-        # doy: (B, seq_len, 1)
-        t = doy / 365.0 * 2 * np.pi  # 归一化到0-2π范围
+
+class CustomGRU(nn.Module):
+    """自定义 GRU 层实现"""
+    def __init__(self, input_size, hidden_size, batch_first=True):
+        super().__init__()
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.batch_first = batch_first
         
-        # 生成多频率正弦/余弦特征
-        t_scaled = t * self.freqs.view(1, 1, -1)  # (B, seq_len, num_freqs)
-        sin = torch.sin(t_scaled + self.phase[..., :self.num_freqs])
-        cos = torch.cos(t_scaled + self.phase[..., self.num_freqs:2*self.num_freqs])
+        self.gru_cell = CustomGRUCell(input_size, hidden_size)
         
-        # 拼接并投影到目标维度
-        encoding = torch.cat([sin, cos], dim=-1)  # (B, seq_len, 2*num_freqs)
-        return self.proj(encoding)  # (B, seq_len, d_model)
-    
+    def forward(self, x, h_0=None):
+        """
+        x: (batch_size, seq_len, input_size) if batch_first=True
+        h_0: 初始隐藏状态 (batch_size, hidden_size)
+        """
+        if self.batch_first:
+            batch_size, seq_len, _ = x.shape
+        else:
+            seq_len, batch_size, _ = x.shape
+            x = x.transpose(0, 1)
+        
+        # 初始化隐藏状态
+        if h_0 is None:
+            h_0 = torch.zeros(batch_size, self.hidden_size, 
+                            device=x.device, dtype=x.dtype)
+        
+        # 存储所有时间步的输出
+        outputs = []
+        h_t = h_0
+        
+        # 循环处理每个时间步
+        for t in range(seq_len):
+            x_t = x[:, t, :]
+            h_t = self.gru_cell(x_t, h_t)
+            outputs.append(h_t)
+        
+        # 堆叠所有输出
+        outputs = torch.stack(outputs, dim=1)  # (batch_size, seq_len, hidden_size)
+        
+        if not self.batch_first:
+            outputs = outputs.transpose(0, 1)
+            
+        return outputs, h_t
+
+
+class CustomTemporalAwarePooling(nn.Module):
+    """使用自定义 GRU 实现的时序感知池化"""
+    def __init__(self, input_dim):
+        super().__init__()
+        self.input_dim = input_dim
+        
+        # 使用自定义 GRU 替代 nn.GRU
+        self.temporal_context = CustomGRU(input_dim, input_dim, batch_first=True)
+        
+        # 注意力查询层
+        self.query = nn.Linear(input_dim, 1)
+        
+        # 可选：添加层归一化以提高稳定性
+        self.layer_norm = nn.LayerNorm(input_dim)
+        
+    def forward(self, x):
+        """
+        x: (batch_size, seq_len, input_dim)
+        """
+        B, T, D = x.shape
+        
+        # 处理边界情况
+        if T == 0:
+            return torch.zeros(B, D, device=x.device, dtype=x.dtype)
+        elif T == 1:
+            return x.squeeze(1)
+        
+        try:
+            # 通过自定义 GRU 捕获时序上下文
+            x_context, _ = self.temporal_context(x)
+            
+            # 可选：应用层归一化
+            x_context = self.layer_norm(x_context)
+            
+            # 计算注意力权重
+            attn_scores = self.query(x_context)  # (B, T, 1)
+            attn_weights = torch.softmax(attn_scores, dim=1)
+            
+            # 应用注意力权重
+            weighted_x = attn_weights * x  # (B, T, D)
+            pooled = weighted_x.sum(dim=1)  # (B, D)
+            
+            return pooled
+            
+        except Exception as e:
+            # 备用方案：如果出现任何错误，使用平均池化
+            print(f"Custom GRU failed with error: {e}. Falling back to mean pooling.")
+            print(f"Input shape: {x.shape}")
+            return torch.mean(x, dim=1)
+
 class TemporalPositionalEncoder(nn.Module):
     def __init__(self, d_model):
         super().__init__()
@@ -72,6 +264,7 @@ class TemporalPositionalEncoder(nn.Module):
         pe[:, :, 0::2] = torch.sin(position * div_term)
         pe[:, :, 1::2] = torch.cos(position * div_term)
         return pe
+    
 
 class TransformerEncoder(nn.Module):
     def __init__(self, band_num, latent_dim, nhead=8, num_encoder_layers=4,
@@ -102,7 +295,16 @@ class TransformerEncoder(nn.Module):
         self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_encoder_layers)
        
         # Temporal Aware Pooling
-        self.attn_pool = TemporalAwarePooling(latent_dim*4)
+        # self.attn_pool = TemporalAwarePooling(latent_dim*4)
+        
+        # Attention Pooling
+        # self.attn_pool = AttentionPooling(latent_dim*4)
+        
+        # CNN-based Temporal Pooling
+        # self.attn_pool = ConvTemporalPooling(latent_dim*4, kernel_sizes=[3, 5, 7])
+        
+        # custom GRU-based Temporal Pooling
+        self.attn_pool = CustomTemporalAwarePooling(latent_dim*4)
    
     def forward(self, x):
         # x: (B, seq_len, 10 bands + 1 doy)
@@ -121,6 +323,7 @@ class TransformerEncoder(nn.Module):
 class ProjectionHead(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim):
         super().__init__()
+        
         self.net = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
             nn.BatchNorm1d(hidden_dim),
@@ -135,331 +338,23 @@ class ProjectionHead(nn.Module):
             nn.Linear(hidden_dim, hidden_dim),
             nn.BatchNorm1d(hidden_dim),
             nn.ReLU(inplace=False),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.BatchNorm1d(hidden_dim),
+            nn.ReLU(inplace=False),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.BatchNorm1d(hidden_dim),
+            nn.ReLU(inplace=False),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.BatchNorm1d(hidden_dim),
+            nn.ReLU(inplace=False),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.BatchNorm1d(hidden_dim),
+            nn.ReLU(inplace=False),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.BatchNorm1d(hidden_dim),
+            nn.ReLU(inplace=False),
+            
             nn.Linear(hidden_dim, output_dim),
         )
     def forward(self, x):
         return self.net(x)
-
-class SimpleMLPBlock(nn.Module):
-    def __init__(self, in_dim, out_dim):
-        super(SimpleMLPBlock, self).__init__()
-        self.fc = nn.Linear(in_dim, out_dim)
-        self.bn = nn.BatchNorm1d(out_dim)
-
-    def forward(self, x):
-        x = self.fc(x)
-        x = self.bn(x)
-        x = F.relu(x)
-        return x
-
-class SimpleMLP(torch.nn.Module):
-    def __init__(self, sample_size, band_size, latent_dim, hidden_dim, num_layers):
-        super(SimpleMLP, self).__init__()
-        self.fc1 = nn.Linear(sample_size*band_size, hidden_dim)
-        self.bn1 = nn.BatchNorm1d(hidden_dim)
-        self.layers = nn.ModuleList([SimpleMLPBlock(hidden_dim, hidden_dim) for _ in range(num_layers)])
-        self.fc_last = nn.Linear(hidden_dim, latent_dim)
-        self.latent_dim = latent_dim
-
-    def forward(self, x):
-        # x形状: (B, seq_len, band_num)
-        B, seq_len, _ = x.shape
-        
-        # 分离数据和doy特征
-        x_data = x[..., :-1]  # (B, seq_len, band_num-1)
-        doy = x[..., -1]     # (B, seq_len, 1)
-        x_data = rearrange(x_data, 'b s n -> b (s n)')
-        x_data = F.relu(self.fc1(x_data))
-        for layer in self.layers:
-            x_data = F.relu(layer(x_data))
-        x_data = self.fc_last(x_data)
-        return x_data
-
-class FusionTransformer(nn.Module):
-    """
-    使用Transformer融合多个模态表示：
-    将各模态表示（如形状(B, 2, latent_dim)）与一个可学习的[CLS] token拼接，
-    经过TransformerEncoder后取CLS token作为融合结果。
-    """
-    def __init__(self, input_dim, num_layers=1, nhead=4):
-        super().__init__()
-        self.cls_token = nn.Parameter(torch.randn(1, 1, input_dim))
-        encoder_layer = nn.TransformerEncoderLayer(d_model=input_dim, nhead=nhead, batch_first=False)
-        self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
-    def forward(self, tokens):
-        # tokens: (B, num_tokens, input_dim)
-        B = tokens.size(0)
-        cls_tokens = self.cls_token.expand(B, -1, -1)
-        tokens = torch.cat([cls_tokens, tokens], dim=1)
-        out = self.transformer_encoder(tokens)
-        fused = out[:, 0, :]
-        return fused
-
-class SingleModalityTransformer(nn.Module):
-    def __init__(self,
-                 input_dim,
-                 latent_dim=128,
-                 max_seq_len=20,
-                 nhead=8,
-                 num_layers=2,
-                 dim_feedforward=512,
-                 dropout=0.1):
-        super().__init__()
-        # 1) 线性embedding
-        self.embedding = nn.Linear(input_dim, latent_dim)
-        # 2) 可学习位置编码
-        self.pos_encoder = nn.Parameter(
-            torch.randn(1, max_seq_len, latent_dim)
-        )
-        # 3) Transformer Encoder
-        encoder_layer = nn.TransformerEncoderLayer(
-            d_model=latent_dim, 
-            nhead=nhead,
-            dim_feedforward=dim_feedforward,
-            dropout=dropout,
-            activation='relu',
-            batch_first=True
-        )
-        self.transformer_encoder = nn.TransformerEncoder(
-            encoder_layer, 
-            num_layers=num_layers
-        )
-        self.attn_pool = AttentionPooling(latent_dim)
-        self.out_proj = nn.Linear(latent_dim, latent_dim)
-
-    def forward(self, x):
-        """
-        x: (B, seq_len, input_dim)
-        """
-        seq_len = x.shape[1]
-        x = self.embedding(x)                         # (B, seq_len, d_model)
-        x = x + self.pos_encoder[:, :seq_len, :]      # (B, seq_len, d_model)
-        x = self.transformer_encoder(x)               # (B, seq_len, d_model)
-        x = self.attn_pool(x)                         # (B, d_model)
-        x = self.out_proj(x)
-        return x
-
-class SpectralTemporalTransformer(nn.Module):
-    def __init__(self, 
-                 data_dim, 
-                 time_dim=2, 
-                 latent_dim=128,
-                 nhead=8,
-                 num_layers=16,
-                 fusion_method='concat',
-                 **kwargs):
-        super().__init__()
-        self.fusion_method = fusion_method
-        # 分开两个transformer
-        self.band_transformer = SingleModalityTransformer(
-            input_dim=data_dim-2,
-            latent_dim=latent_dim,
-            dim_feedforward=512,
-            nhead=nhead,
-            num_layers=num_layers,
-            **kwargs
-        )
-        self.time_transformer = SingleModalityTransformer(
-            input_dim=time_dim,
-            latent_dim=latent_dim,
-            dim_feedforward=256,
-            nhead=4,
-            num_layers=4,
-            **kwargs
-        )
-        # 如果要 concat
-        if fusion_method == 'concat':
-            self.fuse_linear = nn.Linear(2*latent_dim, latent_dim)
-
-    def forward(self, x):
-        # x: (B, seq_len, data_dim + 2)
-        # 1) 分别过自己的transformer
-        band_x = x[..., :-2]  # (B, seq_len, data_dim)
-        time_x = x[..., -2:]  # (B, seq_len, 2)
-        band_feat = self.band_transformer(band_x)  # (B, latent_dim)
-        time_feat = self.time_transformer(time_x)  # (B, latent_dim)
-
-        # 2) 结果融合
-        if self.fusion_method == 'sum':
-            fused = band_feat + time_feat
-        elif self.fusion_method == 'concat':
-            fused = torch.cat([band_feat, time_feat], dim=-1)  # (B, 2*latent_dim)
-            fused = self.fuse_linear(fused)                    # (B, latent_dim)
-        else:
-            raise ValueError("fusion_method must be 'sum' or 'concat'.")
-
-        return fused
-    
-
-class SpatioTemporalCNNEncoder(nn.Module):
-    def __init__(self, input_channels, representation_dim=128):
-        """
-        Spatio-Temporal CNN Encoder for remote sensing data
-        
-        Args:
-            input_channels (int): Number of spectral bands (excluding DOY)
-            representation_dim (int): Output representation dimension, default 128
-        """
-        super(SpatioTemporalCNNEncoder, self).__init__()
-        
-        # 3D CNN for processing (Batch, C, T, H, W) input
-        self.encoder = nn.Sequential(
-            # First conv block
-            nn.Conv3d(in_channels=input_channels, out_channels=32, kernel_size=3, padding=1),
-            nn.BatchNorm3d(32),
-            nn.ReLU(inplace=True),
-            nn.MaxPool3d(kernel_size=(1, 2, 2), stride=(1, 2, 2)),  # Spatial downsampling
-            
-            # Second conv block
-            nn.Conv3d(in_channels=32, out_channels=64, kernel_size=3, padding=1),
-            nn.BatchNorm3d(64),
-            nn.ReLU(inplace=True),
-            nn.MaxPool3d(kernel_size=(1, 2, 2), stride=(1, 2, 2)),  # Spatial downsampling
-            
-            # Third conv block
-            nn.Conv3d(in_channels=64, out_channels=128, kernel_size=3, padding=1),
-            nn.BatchNorm3d(128),
-            nn.ReLU(inplace=True),
-        )
-        
-        # Global pooling for feature aggregation
-        self.global_pool = nn.AdaptiveAvgPool3d((1, 1, 1))
-        
-        # Final projection to representation space
-        self.fc = nn.Linear(128, representation_dim)
-        
-    def forward(self, x):
-        """
-        Forward pass through the encoder
-        
-        Args:
-            x (torch.Tensor): Input tensor with shape (Batch, H, W, T, C)
-                              where the last channel of C is DOY
-        
-        Returns:
-            torch.Tensor: Representation with shape (Batch, representation_dim)
-        """
-        batch_size = x.shape[0]
-        
-        # 1. Remove DOY channel (last channel)
-        x = x[..., :-1]  # Now shape: (Batch, H, W, T, C-1)
-        
-        # 2. Rearrange dimensions to (Batch, C-1, T, H, W) for 3D CNN
-        x = x.permute(0, 4, 3, 1, 2)
-        
-        # 3. Apply CNN encoder
-        x = self.encoder(x)  # Output shape: (Batch, 128, T', H', W')
-        
-        # 4. Global pooling
-        x = self.global_pool(x)  # Shape: (Batch, 128, 1, 1, 1)
-        x = x.view(batch_size, -1)  # Shape: (Batch, 128)
-        
-        # 5. Project to representation dimension
-        x = self.fc(x)  # Shape: (Batch, representation_dim)
-        
-        return x
-    
-
-
-class TemporalAwarePoolingWithMask(nn.Module):
-    """
-    Temporal-aware pooling with attention mechanism that respects the mask.
-    """
-    def __init__(self, input_dim):
-        super().__init__()
-        self.query = nn.Linear(input_dim, 1)
-        self.temporal_context = nn.GRU(input_dim, input_dim, batch_first=True)
-        
-    def forward(self, x, mask=None):
-        """
-        Args:
-            x: Input tensor of shape (batch_size, seq_len, input_dim)
-            mask: Boolean mask of shape (batch_size, seq_len), where True indicates valid timesteps
-        """
-        # Apply temporal context via RNN
-        x_context, _ = self.temporal_context(x)
-        
-        # Calculate attention weights
-        attn_scores = self.query(x_context)  # (B, seq_len, 1)
-        
-        # Apply mask by setting scores of invalid timesteps to a smaller negative value
-        # Using -1e4 instead of -1e9 to avoid overflow with half-precision (when using AMP)
-        if mask is not None:
-            mask_expanded = mask.unsqueeze(-1)  # (B, seq_len, 1)
-            attn_scores = attn_scores.masked_fill(~mask_expanded, float('-inf'))
-        
-        # Apply softmax to get attention weights
-        w = torch.softmax(attn_scores, dim=1)
-        
-        # Apply attention to input and sum
-        return (w * x).sum(dim=1)  # (B, input_dim)
-
-
-class TransformerEncoder_64_Fixed(nn.Module):
-    """
-    Enhanced transformer encoder that handles variable-length sequences with attention masks.
-    Designed for 64 timesteps data structure.
-    """
-    def __init__(self, band_num, latent_dim, nhead=8, num_encoder_layers=4,
-                 dim_feedforward=512, dropout=0.1, max_seq_len=64):
-        super().__init__()
-        
-        # Data feature embedding module
-        self.embedding = nn.Sequential(
-            nn.Linear(band_num, latent_dim*4),
-            nn.LayerNorm(latent_dim*4),
-            nn.ReLU(),
-            nn.Linear(latent_dim*4, latent_dim*4)
-        )
-        
-        # Temporal encoding module
-        self.temporal_encoding = TemporalPositionalEncoder(latent_dim*4)
-        
-        # Transformer encoder
-        encoder_layer = nn.TransformerEncoderLayer(
-            d_model=latent_dim*4,
-            nhead=nhead,
-            dim_feedforward=dim_feedforward,
-            dropout=dropout,
-            activation="relu",
-            batch_first=True
-        )
-        self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_encoder_layers)
-        
-        # Output layers
-        self.attn_pool = TemporalAwarePoolingWithMask(latent_dim*4)
-
-    def forward(self, x, attention_mask=None):
-        """
-        Args:
-            x: Input tensor of shape (batch_size, seq_len, band_num)
-            attention_mask: Boolean mask of shape (batch_size, seq_len), where True indicates valid timesteps
-        """
-        # x shape: (B, seq_len, band_num)
-        B, seq_len, _ = x.shape
-        
-        # Split data and DOY features
-        x_data = x[..., :-1]  # (B, seq_len, band_num-1)
-        doy = x[..., -1]     # (B, seq_len)
-        
-        # Feature embedding
-        x_emb = self.embedding(x_data)  # (B, seq_len, latent_dim*4)
-        
-        # Temporal encoding
-        t_emb = self.temporal_encoding(doy)  # (B, seq_len, latent_dim*4)
-        
-        # Combine embeddings
-        x_t_emb = x_emb + t_emb
-        
-        # Create attention mask for transformer if mask is provided
-        # In transformer, we need to convert to key_padding_mask which is True for positions to ignore
-        if attention_mask is not None:
-            key_padding_mask = ~attention_mask  # Invert since transformer wants 'True' for positions to mask
-            x = self.transformer_encoder(x_t_emb, src_key_padding_mask=key_padding_mask)
-        else:
-            x = self.transformer_encoder(x_t_emb)
-        
-        # Output processing with attention-aware pooling
-        x = self.attn_pool(x, attention_mask)  # (B, latent_dim*4)
-        
-        return x

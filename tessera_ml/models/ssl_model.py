@@ -3,6 +3,7 @@
 import torch
 import torch.nn as nn
 from .modules import *
+from .quantization import FakeQuantizeRepresentation
 
 class BarlowTwinsLoss(nn.Module):
     def __init__(self, lambda_coeff=5e-3):
@@ -32,6 +33,10 @@ class BarlowTwinsLoss(nn.Module):
         return loss, on_diag_loss, off_diag_loss
 
 def compute_cross_correlation(z1, z2):
+    # Cast to float32 for numerical stability
+    z1 = z1.to(torch.float32)
+    z2 = z2.to(torch.float32)
+    
     B = z1.size(0)
     eps = 1e-9
     z1_mean = z1.mean(dim=0)
@@ -44,11 +49,11 @@ def compute_cross_correlation(z1, z2):
     return c
 
 class MultimodalBTModel(nn.Module):
-    def __init__(self, s2_backbone, s1_backbone, projector, fusion_method='concat', return_repr=False, latent_dim=128):
-        """
-        fusion_method: 'sum', 'concat' 或 'transformer'
-        若使用'transformer'则需要提供latent_dim
-        """
+    def __init__(self, s2_backbone, s1_backbone, projector, 
+                 fusion_method='concat', return_repr=False, latent_dim=128,
+                 # QAT parameters from config
+                 apply_qat_representation=False,
+                 qat_representation_bits=8): # qat_start_step will be handled externally
         super().__init__()
         self.s2_backbone = s2_backbone
         self.s1_backbone = s1_backbone
@@ -56,28 +61,57 @@ class MultimodalBTModel(nn.Module):
         self.fusion_method = fusion_method
         self.return_repr = return_repr
         
+        # Determine input dimension for the reducer based on fusion method and backbone output
+        # Assuming backbones (TransformerEncoder) output latent_dim*4
+        backbone_output_dim = latent_dim * 4 
         if fusion_method == 'concat':
-            in_dim = 8 * latent_dim  
+            in_dim_reducer = backbone_output_dim * 2 # s2_repr + s1_repr
         elif fusion_method == 'sum':
-            in_dim = 4 * latent_dim
+            in_dim_reducer = backbone_output_dim
+        else:
+            raise ValueError(f"Unknown fusion_method: {fusion_method}")
             
-        self.dim_reducer = nn.Sequential(nn.Linear(in_dim, latent_dim))
+        self.dim_reducer = nn.Sequential(nn.Linear(in_dim_reducer, latent_dim)) # Output is 128-dim 'fused'
+
+        self.apply_qat_representation = apply_qat_representation
+        if self.apply_qat_representation:
+            # Ensure FakeQuantizeRepresentation is correctly imported or defined
+            self.representation_quantizer = FakeQuantizeRepresentation(bits=qat_representation_bits)
+            if torch.distributed.is_initialized() and torch.distributed.get_rank() == 0:
+                 print(f"INFO: Representation QAT enabled in MultimodalBTModel with {qat_representation_bits} bits.")
+        else:
+            self.representation_quantizer = nn.Identity()
+
+        # This flag will be dynamically set by the training loop based on the current step
+        self.qat_active_for_current_step = False
+
 
     def forward(self, s2_x, s1_x):
-        s2_repr = self.s2_backbone(s2_x)
-        s1_repr = self.s1_backbone(s1_x)
+        s2_repr_backbone = self.s2_backbone(s2_x) # (B, latent_dim*4)
+        s1_repr_backbone = self.s1_backbone(s1_x) # (B, latent_dim*4)
+
         if self.fusion_method == 'concat':
-            fused = torch.cat([s2_repr, s1_repr], dim=-1)
+            fused_before_reduce = torch.cat([s2_repr_backbone, s1_repr_backbone], dim=-1)
         elif self.fusion_method == 'sum':
-            fused = s2_repr + s1_repr
+            fused_before_reduce = s2_repr_backbone + s1_repr_backbone
         else:
             raise ValueError(f"Unknown fusion method: {self.fusion_method}")
-        # 降维到128
-        fused = self.dim_reducer(fused)
-        feats = self.projector(fused)
+        
+        # This is the 128-dim f32 representation we want to quantize
+        fused_representation_f32 = self.dim_reducer(fused_before_reduce)
+
+        representation_for_projector = fused_representation_f32
+        # Apply fake quantization if QAT is globally enabled, active for the current step, and model is in training mode
+        if self.apply_qat_representation and self.qat_active_for_current_step and self.training:
+            representation_for_projector = self.representation_quantizer(fused_representation_f32)
+            
+        projected_feats = self.projector(representation_for_projector) # Projector sees (fake) quantized representation
+        
         if self.return_repr:
-            return feats, fused
-        return feats
+            # Always return the original f32 representation (before any fake quant for SSL)
+            # and the final projected features from the (potentially fake-quantized path).
+            return projected_feats, fused_representation_f32 
+        return projected_feats
 
 
 class MultimodalBTModelDCube(nn.Module):
