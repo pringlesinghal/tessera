@@ -457,12 +457,12 @@ def main():
         artifact = wandb.Artifact("source-code", type="source-snapshot")
         relevant_files = [
             __file__,  # Log the current script itself
-            "src/models/modules.py",
-            "src/models/ssl_model.py",
-            "src/models/quantization.py",
-            "src/utils/lr_scheduler.py",
-            "src/utils/metrics.py",
-            "src/utils/misc.py",
+            "models/modules.py",
+            "models/ssl_model.py",
+            "models/quantization.py",
+            "utils/lr_scheduler.py",
+            "utils/metrics.py",
+            "utils/misc.py",
             args_cli.config,
         ]
         for f_path in relevant_files:
@@ -474,21 +474,20 @@ def main():
 
     # Initial total_steps estimate - will be updated after dataset creation
     total_steps = 1000  # Default
+    total_samples = config.get("total_samples")
     if (
-        config.get("total_samples", 0) > 0
+        total_samples is not None
+        and total_samples > 0
         and config.get("batch_size", 0) > 0
         and world_size > 0
     ):
         total_steps = (
-            config["epochs"]
-            * config["total_samples"]
-            // config["batch_size"]
-            // world_size
+            config["epochs"] * total_samples // config["batch_size"] // world_size
         )
     else:
         if global_rank == 0:
             logging.warning(
-                f"Could not calculate total_steps accurately due to zero values in config or world_size. Using default: {total_steps}"
+                f"Could not calculate total_steps accurately. total_samples={total_samples}, batch_size={config.get('batch_size')}, world_size={world_size}. Using default: {total_steps}"
             )
 
     total_steps_approx = total_steps  # Define total_steps_approx for logging
