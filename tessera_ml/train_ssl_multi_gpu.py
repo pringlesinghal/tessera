@@ -838,7 +838,13 @@ def main():
             for param_group in optimizer.param_groups:
                 param_group["lr"] = current_lr_val
 
-            optimizer.zero_grad(set_to_none=True)
+            # Gradient accumulation setup
+            gradient_accumulation_steps = config.get("gradient_accumulation_steps", 1)
+            is_accumulation_step = (idx + 1) % gradient_accumulation_steps != 0
+
+            # Only zero gradients at the start of accumulation cycle
+            if (idx % gradient_accumulation_steps) == 0:
+                optimizer.zero_grad(set_to_none=True)
 
             qat_is_active_this_step = False
             if config.get("apply_qat_representation", False) and g_step >= config.get(
@@ -866,10 +872,20 @@ def main():
                     f"Global Step {g_step}: QAT for representation is now ACTIVE."
                 )
 
-            with torch.cuda.amp.autocast(enabled=apply_amp):
-                proj_feats1, repr1_f32 = model(s2_aug1, s1_aug1)
-                proj_feats2, repr2_f32 = model(s2_aug2, s1_aug2)
-                loss_main, bar_main, off_main = criterion(proj_feats1, proj_feats2)
+            # Use no_sync context to prevent gradient synchronization during accumulation
+            # Only sync on the last accumulation step
+            if is_accumulation_step:
+                # Don't sync gradients across GPUs yet
+                sync_context = model.no_sync()
+            else:
+                # Use nullcontext on last step to allow normal gradient sync
+                sync_context = nullcontext()
+
+            with sync_context:
+                with torch.cuda.amp.autocast(enabled=apply_amp):
+                    proj_feats1, repr1_f32 = model(s2_aug1, s1_aug1)
+                    proj_feats2, repr2_f32 = model(s2_aug2, s1_aug2)
+                    loss_main, bar_main, off_main = criterion(proj_feats1, proj_feats2)
 
                 # Count FLOPs for the two forward passes (main)
                 if single_forward_flops > 0:
@@ -937,16 +953,24 @@ def main():
                         * (diff_a + diff_b)
                     )
 
-                total_loss = loss_main + loss_mix
+                    total_loss = loss_main + loss_mix
 
-            scaler.scale(total_loss).backward()
-            scaler.unscale_(optimizer)
-            torch.nn.utils.clip_grad_norm_(
-                model.parameters(), max_norm=config.get("clip_grad_norm", 2.0)
-            )
-            scaler.step(optimizer)
-            scaler.update()
+                    # Scale loss by accumulation steps to get correct gradient magnitude
+                    scaled_loss = total_loss / gradient_accumulation_steps
 
+                # Backward pass
+                scaler.scale(scaled_loss).backward()
+
+            # Only step optimizer on the last accumulation step
+            if not is_accumulation_step:
+                scaler.unscale_(optimizer)
+                torch.nn.utils.clip_grad_norm_(
+                    model.parameters(), max_norm=config.get("clip_grad_norm", 2.0)
+                )
+                scaler.step(optimizer)
+                scaler.update()
+
+            # Track examples (accumulate all micro-batches)
             current_batch_size_effective = s2_aug1.size(0) * world_size
             examples_processed_total += current_batch_size_effective
             epoch_examples_processed += current_batch_size_effective
@@ -1001,10 +1025,14 @@ def main():
                 except Exception as e_rank:
                     logging.warning(f"RankMe computation failed: {e_rank}")
 
+                # Calculate effective batch size with gradient accumulation
+                grad_accum_steps = config.get("gradient_accumulation_steps", 1)
+                effective_batch_size = current_batch_size_effective * grad_accum_steps
+
                 logging.info(
                     f"[Epoch={epoch}/{config['epochs']-1}, Step={g_step}/{total_steps_approx}] "
                     f"Loss={loss_main.item():.3f} (Mix:{loss_mix.item() if isinstance(loss_mix, torch.Tensor) else loss_mix:.3f}, AvgRoll:{avg_rolling_loss:.3f}) "
-                    f"LR={current_lr_val:.5f}, GLB_Batch={current_batch_size_effective}, Ex/s={exps_sec:.1f} "
+                    f"LR={current_lr_val:.5f}, Batch={current_batch_size_effective}, EffBatch={effective_batch_size}, Ex/s={exps_sec:.1f} "
                     f"Rank(z_proj)={erank_z:.3f}, Rank(repr_f32)={erank_repr:.3f} "
                     f"TFLOPs_interval={tflops_since_last_log:.3f}, TFLOPs_total={total_tflops_accumulated:.3f}"
                 )
@@ -1234,7 +1262,9 @@ def main():
                 dist.barrier()
                 model.train()
 
-            g_step += 1
+            # Only increment global step after completing a full accumulation cycle
+            if not is_accumulation_step:
+                g_step += 1
 
         # End of epoch
         epoch_duration = time.time() - epoch_start_time

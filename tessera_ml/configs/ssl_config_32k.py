@@ -10,8 +10,8 @@ config = {
     "cache_size": 50,  # Reduced for 40GB GPUs
     
     # ========== Training Parameters - 32k Effective Batch ==========
-    "batch_size": 512,  # Per GPU batch size (fits in 40GB with AMP)
-    "gradient_accumulation_steps": 8,  # 512 * 8 GPUs * 8 steps = 32,768 effective batch
+    "batch_size": 256,  # Per GPU batch size (conservative for 40GB with FSDP overhead)
+    "gradient_accumulation_steps": 16,  # 256 * 8 GPUs * 16 steps = 32,768 effective batch
     "epochs": 1,
     "learning_rate": 0.002,
     "barlow_lambda": 5e-3,
