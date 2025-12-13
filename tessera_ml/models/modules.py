@@ -205,8 +205,8 @@ class CustomTemporalAwarePooling(nn.Module):
         super().__init__()
         self.input_dim = input_dim
         
-        # Use native nn.GRU for torch.compile compatibility
-        self.temporal_context = nn.GRU(input_dim, input_dim, batch_first=True)
+        # Use CustomGRU for FSDP compatibility (nn.GRU has state management issues with FSDP+AMP)
+        self.temporal_context = CustomGRU(input_dim, input_dim, batch_first=True)
         
         # 注意力查询层
         self.query = nn.Linear(input_dim, 1)
