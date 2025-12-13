@@ -51,6 +51,9 @@ export NCCL_SOCKET_IFNAME=^docker0,lo
 export OMP_NUM_THREADS=4
 export MKL_NUM_THREADS=4
 
+# CUDA memory allocator config to reduce fragmentation
+export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
+
 # Print GPU information
 echo "Available GPUs:"
 nvidia-smi --list-gpus

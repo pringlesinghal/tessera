@@ -43,6 +43,9 @@ mkdir -p logs
 export OMP_NUM_THREADS=8
 export MKL_NUM_THREADS=8
 
+# CUDA memory allocator config to reduce fragmentation
+export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
+
 # Print GPU information
 echo "GPU Information:"
 nvidia-smi

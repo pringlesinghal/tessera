@@ -20,7 +20,7 @@ config = {
     ],  # 2016-2024 inclusive
     "cache_size": 100,  # LRU cache size for tiles (increased for multi-GPU training)
     # ========== Training Parameters ==========
-    "batch_size": 2048,  # Per GPU batch size
+    "batch_size": 1024,  # Per GPU batch size (reduced from 2048 for 80GB A100)
     "epochs": 1,
     "learning_rate": 0.002,
     "barlow_lambda": 5e-3,
@@ -82,7 +82,7 @@ config = {
     # For TreeDataset, this will be calculated automatically from the index files
     "total_samples": None,  # Set to None to auto-calculate from dataset
     # ========== Performance Optimization ==========
-    "apply_amp": False,  # Mixed precision training (set to True for faster training)
+    "apply_amp": True,  # Mixed precision training (ENABLED to reduce memory usage)
     "use_torch_compile": True,  # PyTorch 2.0+ compile (may not work with FSDP)
     # ========== Quantization Aware Training (QAT) ==========
     "apply_qat_representation": True,  # Enable QAT for representation

@@ -56,6 +56,9 @@ export NCCL_SOCKET_NTHREADS=2
 export OMP_NUM_THREADS=4
 export MKL_NUM_THREADS=4
 
+# CUDA memory allocator config to reduce fragmentation
+export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
+
 # Get master node address for distributed training
 MASTER_ADDR=$(scontrol show hostnames $SLURM_JOB_NODELIST | head -n 1)
 MASTER_PORT=29500
