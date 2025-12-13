@@ -41,16 +41,11 @@ echo "========================================"
 # Create logs directory if it doesn't exist
 mkdir -p logs
 
-# Set NCCL environment variables for Sherlock
-# For single-node multi-GPU, use NVLink/PCIe without InfiniBand
-export NCCL_DEBUG=INFO
-export NCCL_IB_DISABLE=1  # Disable InfiniBand for single-node
-export NCCL_P2P_LEVEL=NVL  # Use NVLink if available, otherwise PCIe
-export NCCL_SOCKET_IFNAME=^docker0,lo  # Exclude docker and loopback interfaces
-export NCCL_IGNORE_DISABLED_P2P=1  # Ignore P2P capability check
-export NCCL_NET="Socket"  # Force socket-based communication
-export NCCL_NSOCKS_PERTHREAD=4  # Number of sockets per thread
-export NCCL_SOCKET_NTHREADS=4  # Number of threads per socket
+# NCCL configuration for A100s (based on sh03-14n09 inspection)
+export NCCL_SOCKET_IFNAME=ib0,ib1  # Use InfiniBand interfaces
+export NCCL_IB_DISABLE=0            # Enable InfiniBand (A100s have 200Gbps IB)
+export NCCL_P2P_DISABLE=0           # Enable P2P (A100s have NV12 NVLinks)
+export NCCL_DEBUG=INFO              # Keep debugging verbose for troubleshooting
 
 # PyTorch distributed debugging
 export TORCH_DISTRIBUTED_DEBUG=DETAIL  # Verbose distributed debugging
