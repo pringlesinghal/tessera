@@ -454,7 +454,7 @@ def main():
             config=config,
             resume="allow" if is_resume else None,
         )
-        artifact = wandb.Artifact("source-code", type="code")
+        artifact = wandb.Artifact("source-code", type="source-snapshot")
         relevant_files = [
             __file__,  # Log the current script itself
             "src/models/modules.py",
