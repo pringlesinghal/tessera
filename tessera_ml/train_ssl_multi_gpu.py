@@ -879,19 +879,25 @@ def main():
                 # Don't sync gradients across GPUs yet
                 sync_context = model.no_sync()
                 if global_rank == 0 and batch_idx < 20:  # Debug: log first 20 batches
-                    logging.info(f"[DEBUG] Batch {batch_idx}: Using no_sync() (accumulating)")
+                    logging.info(
+                        f"[DEBUG] Batch {batch_idx}: Using no_sync() (accumulating)"
+                    )
             else:
                 # Use nullcontext on last step to allow normal gradient sync
                 sync_context = nullcontext()
                 if global_rank == 0 and batch_idx < 20:
-                    logging.info(f"[DEBUG] Batch {batch_idx}: Syncing gradients (optimizer step)")
+                    logging.info(
+                        f"[DEBUG] Batch {batch_idx}: Syncing gradients (optimizer step)"
+                    )
 
             try:
                 with sync_context:
-                with torch.cuda.amp.autocast(enabled=apply_amp):
-                    proj_feats1, repr1_f32 = model(s2_aug1, s1_aug1)
-                    proj_feats2, repr2_f32 = model(s2_aug2, s1_aug2)
-                    loss_main, bar_main, off_main = criterion(proj_feats1, proj_feats2)
+                    with torch.cuda.amp.autocast(enabled=apply_amp):
+                        proj_feats1, repr1_f32 = model(s2_aug1, s1_aug1)
+                        proj_feats2, repr2_f32 = model(s2_aug2, s1_aug2)
+                        loss_main, bar_main, off_main = criterion(
+                            proj_feats1, proj_feats2
+                        )
 
                 # Count FLOPs for the two forward passes (main)
                 if single_forward_flops > 0:
@@ -959,21 +965,27 @@ def main():
                         * (diff_a + diff_b)
                     )
 
-                    # Compute total loss (outside mixup block)
-                    total_loss = loss_main + loss_mix
+                # Compute total loss (MUST be outside mixup block)
+                total_loss = loss_main + loss_mix
 
-                    # Scale loss by accumulation steps to get correct gradient magnitude
-                    scaled_loss = total_loss / gradient_accumulation_steps
+                # Scale loss by accumulation steps to get correct gradient magnitude
+                scaled_loss = total_loss / gradient_accumulation_steps
 
-                    # Backward pass (must be inside sync_context)
-                    scaler.scale(scaled_loss).backward()
-                    
-                    if global_rank == 0 and batch_idx < 20:
-                        logging.info(f"[DEBUG] Batch {batch_idx}: Backward completed, loss={total_loss.item():.4f}")
-                        
+                # Backward pass (must be inside sync_context)
+                scaler.scale(scaled_loss).backward()
+
+                if global_rank == 0 and batch_idx < 20:
+                    logging.info(
+                        f"[DEBUG] Batch {batch_idx}: Backward completed, loss={total_loss.item():.4f}"
+                    )
+
             except Exception as e:
-                logging.error(f"[ERROR] Batch {batch_idx}, Rank {global_rank}: Error in forward/backward: {e}")
-                logging.error(f"[ERROR] FSDP state: {getattr(model, '_state', 'UNKNOWN')}")
+                logging.error(
+                    f"[ERROR] Batch {batch_idx}, Rank {global_rank}: Error in forward/backward: {e}"
+                )
+                logging.error(
+                    f"[ERROR] FSDP state: {getattr(model, '_state', 'UNKNOWN')}"
+                )
                 logging.error(f"[ERROR] is_accumulation_step: {is_accumulation_step}")
                 raise
 
@@ -985,7 +997,7 @@ def main():
                 )
                 scaler.step(optimizer)
                 scaler.update()
-                
+
                 if global_rank == 0 and batch_idx < 20:
                     logging.info(f"[DEBUG] Batch {batch_idx}: Optimizer step completed")
 
