@@ -83,7 +83,7 @@ config = {
     "total_samples": None,  # Set to None to auto-calculate from dataset
     # ========== Performance Optimization ==========
     "apply_amp": True,  # Mixed precision training (ENABLED to reduce memory usage)
-    "use_torch_compile": True,  # PyTorch 2.0+ compile (ENABLED: using native nn.GRU now)
+    "use_torch_compile": False,  # PyTorch 2.0+ compile (DISABLED: libcuda.so not found in Apptainer)
     # ========== Quantization Aware Training (QAT) ==========
     "apply_qat_representation": True,  # Enable QAT for representation
     "qat_representation_bits": 8,  # Quantization bits (typically 8)
