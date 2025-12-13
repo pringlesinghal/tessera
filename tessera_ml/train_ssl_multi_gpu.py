@@ -899,85 +899,85 @@ def main():
                             proj_feats1, proj_feats2
                         )
 
-                # Count FLOPs for the two forward passes (main)
-                if single_forward_flops > 0:
-                    flops_since_last_log += (
-                        2 * single_forward_flops
-                    )  # Two forward passes
-
-                loss_mix = torch.tensor(0.0, device=device)
-                if config.get("apply_mixup", False):
-                    B = s2_aug1.size(0)
-                    idxs = torch.randperm(B, device=device)
-                    alpha_dist = torch.distributions.Beta(
-                        config.get("beta_alpha", 1.0), config.get("beta_beta", 1.0)
-                    )
-                    alpha = alpha_dist.sample().to(device)
-
-                    # Ensure dtype handling for mixup, especially with AMP
-                    s2_aug1_m, s2_aug2_m = (
-                        (s2_aug1.float(), s2_aug2.float())
-                        if apply_amp and s2_aug1.dtype == torch.float16
-                        else (s2_aug1, s2_aug2)
-                    )
-                    s1_aug1_m, s1_aug2_m = (
-                        (s1_aug1.float(), s1_aug2.float())
-                        if apply_amp and s1_aug1.dtype == torch.float16
-                        else (s1_aug1, s1_aug2)
-                    )
-
-                    y_m_s2 = alpha * s2_aug1_m + (1 - alpha) * s2_aug2_m[idxs, :]
-                    y_m_s1 = alpha * s1_aug1_m + (1 - alpha) * s1_aug2_m[idxs, :]
-
-                    if apply_amp and s2_aug1.dtype == torch.float16:
-                        y_m_s2, y_m_s1 = y_m_s2.half(), y_m_s1.half()
-
-                    z_m, _ = model(y_m_s2, y_m_s1)
-
-                    # Count FLOPs for mixup forward pass
+                    # Count FLOPs for the two forward passes (main)
                     if single_forward_flops > 0:
                         flops_since_last_log += (
-                            single_forward_flops  # One more forward pass for mixup
+                            2 * single_forward_flops
+                        )  # Two forward passes
+
+                    loss_mix = torch.tensor(0.0, device=device)
+                    if config.get("apply_mixup", False):
+                        B = s2_aug1.size(0)
+                        idxs = torch.randperm(B, device=device)
+                        alpha_dist = torch.distributions.Beta(
+                            config.get("beta_alpha", 1.0), config.get("beta_beta", 1.0)
+                        )
+                        alpha = alpha_dist.sample().to(device)
+
+                        # Ensure dtype handling for mixup, especially with AMP
+                        s2_aug1_m, s2_aug2_m = (
+                            (s2_aug1.float(), s2_aug2.float())
+                            if apply_amp and s2_aug1.dtype == torch.float16
+                            else (s2_aug1, s2_aug2)
+                        )
+                        s1_aug1_m, s1_aug2_m = (
+                            (s1_aug1.float(), s1_aug2.float())
+                            if apply_amp and s1_aug1.dtype == torch.float16
+                            else (s1_aug1, s1_aug2)
                         )
 
-                    z2_perm = torch.gather(
-                        proj_feats2,
-                        0,
-                        idxs.unsqueeze(1).expand(-1, proj_feats2.size(1)),
-                    )
+                        y_m_s2 = alpha * s2_aug1_m + (1 - alpha) * s2_aug2_m[idxs, :]
+                        y_m_s1 = alpha * s1_aug1_m + (1 - alpha) * s1_aug2_m[idxs, :]
 
-                    cc_m_a = compute_cross_correlation(z_m, proj_feats1)
-                    cc_m_b = compute_cross_correlation(z_m, z2_perm)
+                        if apply_amp and s2_aug1.dtype == torch.float16:
+                            y_m_s2, y_m_s1 = y_m_s2.half(), y_m_s1.half()
 
-                    cc_z1_z1 = compute_cross_correlation(proj_feats1, proj_feats1)
-                    cc_z2p_z1 = compute_cross_correlation(z2_perm, proj_feats1)
-                    cc_z1_z2p = compute_cross_correlation(proj_feats1, z2_perm)
-                    cc_z2p_z2p = compute_cross_correlation(z2_perm, z2_perm)
+                        z_m, _ = model(y_m_s2, y_m_s1)
 
-                    cc_m_a_gt = alpha * cc_z1_z1 + (1 - alpha) * cc_z2p_z1
-                    cc_m_b_gt = alpha * cc_z1_z2p + (1 - alpha) * cc_z2p_z2p
+                        # Count FLOPs for mixup forward pass
+                        if single_forward_flops > 0:
+                            flops_since_last_log += (
+                                single_forward_flops  # One more forward pass for mixup
+                            )
 
-                    diff_a = (cc_m_a - cc_m_a_gt).pow(2).sum()
-                    diff_b = (cc_m_b - cc_m_b_gt).pow(2).sum()
-                    loss_mix = (
-                        config.get("mixup_lambda", 1.0)
-                        * config["barlow_lambda"]
-                        * (diff_a + diff_b)
-                    )
+                        z2_perm = torch.gather(
+                            proj_feats2,
+                            0,
+                            idxs.unsqueeze(1).expand(-1, proj_feats2.size(1)),
+                        )
 
-                # Compute total loss (MUST be outside mixup block)
-                total_loss = loss_main + loss_mix
+                        cc_m_a = compute_cross_correlation(z_m, proj_feats1)
+                        cc_m_b = compute_cross_correlation(z_m, z2_perm)
 
-                # Scale loss by accumulation steps to get correct gradient magnitude
-                scaled_loss = total_loss / gradient_accumulation_steps
+                        cc_z1_z1 = compute_cross_correlation(proj_feats1, proj_feats1)
+                        cc_z2p_z1 = compute_cross_correlation(z2_perm, proj_feats1)
+                        cc_z1_z2p = compute_cross_correlation(proj_feats1, z2_perm)
+                        cc_z2p_z2p = compute_cross_correlation(z2_perm, z2_perm)
 
-                # Backward pass (must be inside sync_context)
-                scaler.scale(scaled_loss).backward()
+                        cc_m_a_gt = alpha * cc_z1_z1 + (1 - alpha) * cc_z2p_z1
+                        cc_m_b_gt = alpha * cc_z1_z2p + (1 - alpha) * cc_z2p_z2p
 
-                if global_rank == 0 and batch_idx < 20:
-                    logging.info(
-                        f"[DEBUG] Batch {batch_idx}: Backward completed, loss={total_loss.item():.4f}"
-                    )
+                        diff_a = (cc_m_a - cc_m_a_gt).pow(2).sum()
+                        diff_b = (cc_m_b - cc_m_b_gt).pow(2).sum()
+                        loss_mix = (
+                            config.get("mixup_lambda", 1.0)
+                            * config["barlow_lambda"]
+                            * (diff_a + diff_b)
+                        )
+
+                    # Compute total loss (MUST be outside mixup block)
+                    total_loss = loss_main + loss_mix
+
+                    # Scale loss by accumulation steps to get correct gradient magnitude
+                    scaled_loss = total_loss / gradient_accumulation_steps
+
+                    # Backward pass (must be inside sync_context)
+                    scaler.scale(scaled_loss).backward()
+
+                    if global_rank == 0 and batch_idx < 20:
+                        logging.info(
+                            f"[DEBUG] Batch {batch_idx}: Backward completed, loss={total_loss.item():.4f}"
+                        )
 
             except Exception as e:
                 logging.error(
