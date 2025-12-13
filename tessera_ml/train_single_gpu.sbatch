@@ -8,13 +8,14 @@
 #SBATCH --partition=serc
 #SBATCH --gpus-per-node=1
 #SBATCH -C GPU_SKU:A100_SXM4
+#SBATCH --mem=80G  # Request 80GB variant
 #SBATCH --output=logs/train_1gpu_%j.log
 #SBATCH --error=logs/train_1gpu_%j.err
 
 set -euo pipefail
 
 # Configuration
-CONFIG_FILE_ARG="${1:-configs/ssl_config.py}"
+CONFIG_FILE_ARG="${1:-configs/ssl_config_32k.py}"  # Default: 32k batch for 40GB GPUs
 CONTAINER_IMAGE="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/ml_env.sif"
 
 # Change to the tessera_ml directory (explicit path)

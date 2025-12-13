@@ -8,13 +8,14 @@
 #SBATCH --partition=serc
 #SBATCH --gpus-per-node=8
 #SBATCH -C GPU_SKU:A100_SXM4
+#SBATCH --mem=256G  # Request nodes with sufficient memory for 80GB GPUs
 #SBATCH --output=logs/train_fsdp_multinode_%j.log
 #SBATCH --error=logs/train_fsdp_multinode_%j.err
 
 set -euo pipefail
 
 # Configuration
-CONFIG_FILE_ARG="${1:-configs/ssl_config.py}"
+CONFIG_FILE_ARG="${1:-configs/ssl_config_32k.py}"  # Default: 32k batch for 40GB GPUs
 GPUS_PER_NODE=8
 NUM_NODES=$SLURM_NNODES
 TOTAL_GPUS=$((NUM_NODES * GPUS_PER_NODE))
