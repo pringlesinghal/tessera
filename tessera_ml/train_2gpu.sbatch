@@ -2,9 +2,9 @@
 #SBATCH --job-name=fsdp_2gpu
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=16
+#SBATCH --cpus-per-task=8
 #SBATCH --mem=128G
-#SBATCH --time=24:00:00
+#SBATCH --time=2:00:00
 #SBATCH --partition=serc
 #SBATCH --gpus-per-node=2
 #SBATCH -C GPU_SKU:A100_SXM4
@@ -56,8 +56,8 @@ export TORCH_SHOW_CPP_STACKTRACES=1  # Show C++ stack traces on errors
 export OMP_NUM_THREADS=4
 export MKL_NUM_THREADS=4
 
-# CUDA memory allocator config to reduce fragmentation
-export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
+# CUDA memory allocator config to reduce fragmentation (removed for OOM investigation)
+# export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
 
 # Print GPU and network information
 echo "Available GPUs:"
@@ -93,7 +93,6 @@ echo "PYTHONPATH: $PYTHONPATH"
 apptainer exec --nv \
     --bind "$BIND_PATHS" \
     --pwd "$WORK_DIR" \
-    --env PYTORCH_CUDA_ALLOC_CONF="$PYTORCH_CUDA_ALLOC_CONF" \
     --env PYTHONPATH="$PYTHONPATH" \
     "$CONTAINER_IMAGE" \
     torchrun \

@@ -771,6 +771,8 @@ def main():
         )
         train_sampler.set_epoch(epoch)
 
+        logging.info("DistributedSampler instatiated")
+
         # Create DataLoader
         train_loader = DataLoader(
             dataset_train,
@@ -781,6 +783,7 @@ def main():
             pin_memory=True,
             persistent_workers=True if config["num_workers"] > 0 else False,
         )
+        logging.info("DataLoader instantiated")
 
         epoch_start_time = time.time()
         epoch_examples_processed = 0
@@ -789,13 +792,15 @@ def main():
 
         model.train()
 
-        # Main training loop
-        batch_idx = 0  # Track batch index for gradient accumulation
+        logging.info("Just before entering training loop")
+
+        # Main training loop (no gradient accumulation)
         for batch_data in train_loader:
             s2_aug1 = batch_data["s2_aug1"].to(device, non_blocking=True)
             s2_aug2 = batch_data["s2_aug2"].to(device, non_blocking=True)
             s1_aug1 = batch_data["s1_aug1"].to(device, non_blocking=True)
             s1_aug2 = batch_data["s1_aug2"].to(device, non_blocking=True)
+            logging.info("Batch loaded")
 
             # Compute FLOPs for a single forward pass (only once)
             if not flops_computed_once and FlopCountAnalysis is not None:
@@ -839,13 +844,8 @@ def main():
             for param_group in optimizer.param_groups:
                 param_group["lr"] = current_lr_val
 
-            # Gradient accumulation setup
-            gradient_accumulation_steps = config.get("gradient_accumulation_steps", 1)
-            is_accumulation_step = (batch_idx + 1) % gradient_accumulation_steps != 0
-
-            # Only zero gradients at the start of accumulation cycle
-            if (batch_idx % gradient_accumulation_steps) == 0:
-                optimizer.zero_grad(set_to_none=True)
+            # Clear gradients for each step
+            optimizer.zero_grad(set_to_none=True)
 
             qat_is_active_this_step = False
             if config.get("apply_qat_representation", False) and g_step >= config.get(
@@ -873,40 +873,22 @@ def main():
                     f"Global Step {g_step}: QAT for representation is now ACTIVE."
                 )
 
-            # Use no_sync context to prevent gradient synchronization during accumulation
-            # Only sync on the last accumulation step
-            if is_accumulation_step:
-                # Don't sync gradients across GPUs yet
-                sync_context = model.no_sync()
-                if global_rank == 0 and batch_idx < 20:  # Debug: log first 20 batches
-                    logging.info(
-                        f"[DEBUG] Batch {batch_idx}: Using no_sync() (accumulating)"
-                    )
-            else:
-                # Use nullcontext on last step to allow normal gradient sync
-                sync_context = nullcontext()
-                if global_rank == 0 and batch_idx < 20:
-                    logging.info(
-                        f"[DEBUG] Batch {batch_idx}: Syncing gradients (optimizer step)"
-                    )
+            # Forward pass with automatic synchronization
+            with torch.cuda.amp.autocast(enabled=apply_amp):
+                proj_feats1, repr1_f32 = model(s2_aug1, s1_aug1)
+                proj_feats2, repr2_f32 = model(s2_aug2, s1_aug2)
+                loss_main, bar_main, off_main = criterion(
+                    proj_feats1, proj_feats2
+                )
 
-            try:
-                with sync_context:
-                    with torch.cuda.amp.autocast(enabled=apply_amp):
-                        proj_feats1, repr1_f32 = model(s2_aug1, s1_aug1)
-                        proj_feats2, repr2_f32 = model(s2_aug2, s1_aug2)
-                        loss_main, bar_main, off_main = criterion(
-                            proj_feats1, proj_feats2
-                        )
+            # Count FLOPs for the two forward passes (main)
+            if single_forward_flops > 0:
+                flops_since_last_log += (
+                    2 * single_forward_flops
+                )  # Two forward passes
 
-                    # Count FLOPs for the two forward passes (main)
-                    if single_forward_flops > 0:
-                        flops_since_last_log += (
-                            2 * single_forward_flops
-                        )  # Two forward passes
-
-                    loss_mix = torch.tensor(0.0, device=device)
-                    if config.get("apply_mixup", False):
+            loss_mix = torch.tensor(0.0, device=device)
+            if config.get("apply_mixup", False):
                         B = s2_aug1.size(0)
                         idxs = torch.randperm(B, device=device)
                         alpha_dist = torch.distributions.Beta(
@@ -931,6 +913,8 @@ def main():
 
                         if apply_amp and s2_aug1.dtype == torch.float16:
                             y_m_s2, y_m_s1 = y_m_s2.half(), y_m_s1.half()
+
+                        logging.info(f'Datatype check: {s2_aug1.dtype=},{y_m_s2.dtype=},{y_m_s1.dtype=}')
 
                         z_m, _ = model(y_m_s2, y_m_s1)
 
@@ -965,43 +949,19 @@ def main():
                             * (diff_a + diff_b)
                         )
 
-                    # Compute total loss (MUST be outside mixup block)
-                    total_loss = loss_main + loss_mix
+            # Compute total loss
+            total_loss = loss_main + loss_mix
 
-                    # Scale loss by accumulation steps to get correct gradient magnitude
-                    scaled_loss = total_loss / gradient_accumulation_steps
+            # Backward pass
+            scaler.scale(total_loss).backward()
+            scaler.unscale_(optimizer)
+            torch.nn.utils.clip_grad_norm_(
+                model.parameters(), max_norm=config.get("clip_grad_norm", 2.0)
+            )
+            scaler.step(optimizer)
+            scaler.update()
 
-                    # Backward pass (must be inside sync_context)
-                    scaler.scale(scaled_loss).backward()
-
-                    if global_rank == 0 and batch_idx < 20:
-                        logging.info(
-                            f"[DEBUG] Batch {batch_idx}: Backward completed, loss={total_loss.item():.4f}"
-                        )
-
-            except Exception as e:
-                logging.error(
-                    f"[ERROR] Batch {batch_idx}, Rank {global_rank}: Error in forward/backward: {e}"
-                )
-                logging.error(
-                    f"[ERROR] FSDP state: {getattr(model, '_state', 'UNKNOWN')}"
-                )
-                logging.error(f"[ERROR] is_accumulation_step: {is_accumulation_step}")
-                raise
-
-            # Only step optimizer on the last accumulation step
-            if not is_accumulation_step:
-                scaler.unscale_(optimizer)
-                torch.nn.utils.clip_grad_norm_(
-                    model.parameters(), max_norm=config.get("clip_grad_norm", 2.0)
-                )
-                scaler.step(optimizer)
-                scaler.update()
-
-                if global_rank == 0 and batch_idx < 20:
-                    logging.info(f"[DEBUG] Batch {batch_idx}: Optimizer step completed")
-
-            # Track examples (accumulate all micro-batches)
+            # Track examples
             current_batch_size_effective = s2_aug1.size(0) * world_size
             examples_processed_total += current_batch_size_effective
             epoch_examples_processed += current_batch_size_effective
@@ -1015,22 +975,9 @@ def main():
                 else 0.0
             )
 
-            if g_step % config["log_interval_steps"] == 0 and global_rank == 0:
-                current_time_log = time.time()
-                time_elapsed_log = current_time_log - last_log_time
-                examples_since_last_log = (
-                    examples_processed_total - last_log_examples
-                )  # This is global examples
-
-                exps_sec = (
-                    examples_since_last_log / time_elapsed_log
-                    if time_elapsed_log > 0
-                    else 0.0
-                )
-                last_log_time = current_time_log
-                last_log_examples = examples_processed_total
-
-                # Gather FLOPs from all ranks
+            # All ranks participate in FLOPs all_reduce on log intervals
+            if g_step % config["log_interval_steps"] == 0:
+                # Gather FLOPs from all ranks (ALL ranks must participate)
                 flops_tensor = torch.tensor(
                     [flops_since_last_log], dtype=torch.float64, device=device
                 )
@@ -1047,59 +994,65 @@ def main():
                 # Reset local FLOPs counter
                 flops_since_last_log = 0
 
-                erank_z, erank_repr = 0.0, 0.0
-                try:
-                    if proj_feats1 is not None:
-                        erank_z = rankme(proj_feats1.detach()).item()
-                    if repr1_f32 is not None:
-                        erank_repr = rankme(repr1_f32.detach()).item()
-                except Exception as e_rank:
-                    logging.warning(f"RankMe computation failed: {e_rank}")
+                # Only rank 0 does timing calculation and logging
+                if global_rank == 0:
+                    current_time_log = time.time()
+                    time_elapsed_log = current_time_log - last_log_time
+                    examples_since_last_log = (
+                        examples_processed_total - last_log_examples
+                    )  # This is global examples
 
-                # Calculate effective batch size with gradient accumulation
-                grad_accum_steps = config.get("gradient_accumulation_steps", 1)
-                effective_batch_size = current_batch_size_effective * grad_accum_steps
-
-                logging.info(
-                    f"[Epoch={epoch}/{config['epochs']-1}, Step={g_step}/{total_steps_approx}] "
-                    f"Loss={loss_main.item():.3f} (Mix:{loss_mix.item() if isinstance(loss_mix, torch.Tensor) else loss_mix:.3f}, AvgRoll:{avg_rolling_loss:.3f}) "
-                    f"LR={current_lr_val:.5f}, Batch={current_batch_size_effective}, EffBatch={effective_batch_size}, Ex/s={exps_sec:.1f} "
-                    f"Rank(z_proj)={erank_z:.3f}, Rank(repr_f32)={erank_repr:.3f} "
-                    f"TFLOPs_interval={tflops_since_last_log:.3f}, TFLOPs_total={total_tflops_accumulated:.3f}"
-                )
-                if wandb_run:
-                    wandb_log_dict = {
-                        "epoch": epoch,
-                        "global_step": g_step,
-                        "loss_main": loss_main.item(),
-                        "loss_mix": (
-                            loss_mix.item()
-                            if isinstance(loss_mix, torch.Tensor)
-                            else loss_mix
-                        ),
-                        "total_loss": total_loss.item(),
-                        "avg_rolling_loss": avg_rolling_loss,
-                        "learning_rate": current_lr_val,
-                        "examples_per_second_global": exps_sec,
-                        "rank_z_projection": erank_z,
-                        "rank_fused_representation_f32": erank_repr,
-                        "grad_scaler_scale": (
-                            scaler.get_scale() if apply_amp else -1.0
-                        ),  # Log scaler state
-                        "tflops_since_last_log": tflops_since_last_log,
-                        "tflops_accumulated": total_tflops_accumulated,
-                    }
-                    # 修复：使用global step作为wandb的step参数
-                    wandb.log(wandb_log_dict, step=g_step)
-            elif g_step % config["log_interval_steps"] != 0:
-                # For non-rank0 or non-log steps, just reset the local counter after all_reduce
-                if g_step % config["log_interval_steps"] == 0:
-                    # All ranks participate in all_reduce
-                    flops_tensor = torch.tensor(
-                        [flops_since_last_log], dtype=torch.float64, device=device
+                    exps_sec = (
+                        examples_since_last_log / time_elapsed_log
+                        if time_elapsed_log > 0
+                        else 0.0
                     )
-                    dist.all_reduce(flops_tensor, op=dist.ReduceOp.SUM)
-                    flops_since_last_log = 0
+                    last_log_time = current_time_log
+                    last_log_examples = examples_processed_total
+
+                    erank_z, erank_repr = 0.0, 0.0
+                    try:
+                        if proj_feats1 is not None:
+                            erank_z = rankme(proj_feats1.detach()).item()
+                        if repr1_f32 is not None:
+                            erank_repr = rankme(repr1_f32.detach()).item()
+                    except Exception as e_rank:
+                        logging.warning(f"RankMe computation failed: {e_rank}")
+
+                    # Effective batch size (no gradient accumulation)
+                    effective_batch_size = current_batch_size_effective
+
+                    logging.info(
+                        f"[Epoch={epoch}/{config['epochs']-1}, Step={g_step}/{total_steps_approx}] "
+                        f"Loss={loss_main.item():.3f} (Mix:{loss_mix.item() if isinstance(loss_mix, torch.Tensor) else loss_mix:.3f}, AvgRoll={avg_rolling_loss:.3f}) "
+                        f"LR={current_lr_val:.5f}, Batch={current_batch_size_effective}, EffBatch={effective_batch_size}, Ex/s={exps_sec:.1f} "
+                        f"Rank(z_proj)={erank_z:.3f}, Rank(repr_f32)={erank_repr:.3f} "
+                        f"TFLOPs_interval={tflops_since_last_log:.3f}, TFLOPs_total={total_tflops_accumulated:.3f}"
+                    )
+                    if wandb_run:
+                        wandb_log_dict = {
+                            "epoch": epoch,
+                            "global_step": g_step,
+                            "loss_main": loss_main.item(),
+                            "loss_mix": (
+                                loss_mix.item()
+                                if isinstance(loss_mix, torch.Tensor)
+                                else loss_mix
+                            ),
+                            "total_loss": total_loss.item(),
+                            "avg_rolling_loss": avg_rolling_loss,
+                            "learning_rate": current_lr_val,
+                            "examples_per_second_global": exps_sec,
+                            "rank_z_projection": erank_z,
+                            "rank_fused_representation_f32": erank_repr,
+                            "grad_scaler_scale": (
+                                scaler.get_scale() if apply_amp else -1.0
+                            ),  # Log scaler state
+                            "tflops_since_last_log": tflops_since_last_log,
+                            "tflops_accumulated": total_tflops_accumulated,
+                        }
+                        # 修复：使用global step作为wandb的step参数
+                        wandb.log(wandb_log_dict, step=g_step)
 
             if (
                 config.get("val_interval_steps", 0) > 0
@@ -1293,12 +1246,8 @@ def main():
                 dist.barrier()
                 model.train()
 
-            # Only increment global step after completing a full accumulation cycle
-            if not is_accumulation_step:
-                g_step += 1
-
-            # Always increment batch index (every micro-batch)
-            batch_idx += 1
+            # Increment global step after each batch
+            g_step += 1
 
         # End of epoch
         epoch_duration = time.time() - epoch_start_time

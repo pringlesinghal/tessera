@@ -7,11 +7,11 @@ config = {
     "index_dir": "/scratch/groups/dlobell/psinghal/sentineldownloader/tree_index_valid_shuffled",
     "data_root": "/scratch/users/psinghal/time_series",
     "years": [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024],
-    "cache_size": 50,  # Moderate cache for 40GB GPUs
+    "cache_size": 20,  # Reduced cache for 40GB GPUs (was 50)
     
-    # ========== Training Parameters - 4k Effective Batch ==========
-    "batch_size": 256,  # Per GPU batch size (fits comfortably in 40GB with FSDP)
-    "gradient_accumulation_steps": 8,  # 256 * 2 GPUs * 8 steps = 4,096 effective batch
+    # ========== Training Parameters - No Gradient Accumulation ==========
+    "batch_size": 2,  # Bare minimum per GPU batch size (was 256->128->2)
+    # No gradient accumulation - direct optimization per batch
     "epochs": 1,  # Quick test
     "learning_rate": 0.002,
     "barlow_lambda": 5e-3,
@@ -31,9 +31,9 @@ config = {
     "s1_num_heads": 4,
     "s1_num_layers": 4,
     "s1_dim_feedforward": 4096,
-    # Projection head
-    "projector_out_dim": 8192 * 2,
-    "projector_hidden_dim": 8192 * 2,
+    # Projection head (reduced from 16384 for memory - original was 8192*2)
+    "projector_out_dim": 4096,
+    "projector_hidden_dim": 4096,
     
     # ========== Data Parameters ==========
     "sample_size_s2": 40,
@@ -76,7 +76,7 @@ config = {
     "total_samples": None,  # Auto-calculate
     
     # ========== Performance Optimization ==========
-    "apply_amp": True,  # Essential for memory efficiency
+    "apply_amp": False,  # Essential for memory efficiency
     "use_torch_compile": False,  # Not available in Apptainer
     
     # ========== Quantization Aware Training ==========
