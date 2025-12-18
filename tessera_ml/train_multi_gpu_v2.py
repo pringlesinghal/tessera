@@ -179,10 +179,11 @@ def main():
         index_dir=config["index_dir"],
         data_dir=config["data_root"],
         year=None,
-        years=list(range(2016, 2025)),
+        years=config["years"],
         sample_size_s2=config["sample_size_s2"],
         sample_size_s1=config["sample_size_s1"],
-        normalize=True,
+        normalize=config.get("normalize", True),
+        cache_size=config.get("cache_size", 100),
     )
 
     # Create distributed sampler
@@ -197,8 +198,8 @@ def main():
         dataset_train,
         batch_size=config["batch_size"],
         sampler=train_sampler,
-        num_workers=4,
-        pin_memory=True,
+        num_workers=config.get("num_workers", 2),
+        pin_memory=config.get("pin_memory", True),
         drop_last=True
     )
 
@@ -257,41 +258,116 @@ def main():
     
     # === OPTIMIZER SETUP ===
     criterion = BarlowTwinsLoss(lambda_coeff=config['barlow_lambda'])
-    optimizer = torch.optim.AdamW(model.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
+    optimizer = torch.optim.AdamW(model.parameters(), lr=config['learning_rate'], weight_decay=config['weight_decay'])
+    
+    # === POST-NORMALIZATION SETUP ===
+    # Sentinel-2 normalization parameters (from tessera codebase)
+    s2_mean = torch.tensor([
+        1353.3418, 1265.4015, 1269.009, 1976.1317,
+        2581.0518, 3238.1504, 3546.2078, 3459.1382,
+        3906.4131, 1535.5925
+    ], device=device, dtype=torch.float32).view(1, 1, -1)  # [1, 1, 10]
+    
+    s2_std = torch.tensor([
+        242.07303, 290.84450, 402.9476, 516.77747,
+        729.89056, 928.1345, 896.01056, 896.4886,
+        1111.1157, 234.4575
+    ], device=device, dtype=torch.float32).view(1, 1, -1)  # [1, 1, 10]
+    
+    # Sentinel-1 normalization parameters
+    s1_mean = torch.tensor([-9.205532, -16.072447], device=device, dtype=torch.float32).view(1, 1, -1)  # [1, 1, 2]
+    s1_std = torch.tensor([2.3895948, 4.153361], device=device, dtype=torch.float32).view(1, 1, -1)  # [1, 1, 2]
+    
+    def normalize_batch_on_gpu(s2_raw, s1_raw):
+        """Apply post-normalization on GPU for efficiency"""
+        if config.get("normalize", True):
+            # Already normalized in dataset
+            return s2_raw, s1_raw
+        
+        # Extract bands (exclude DOY which is last channel)
+        s2_bands = s2_raw[:, :, :-1]  # [batch, time, 10]
+        s2_doy = s2_raw[:, :, -1:]    # [batch, time, 1] 
+        
+        s1_bands = s1_raw[:, :, :-1]  # [batch, time, 2]
+        s1_doy = s1_raw[:, :, -1:]    # [batch, time, 1]
+        
+        # Normalize bands
+        s2_norm = (s2_bands - s2_mean) / s2_std
+        s1_norm = (s1_bands - s1_mean) / s1_std
+        
+        # Concatenate back with DOY
+        s2_final = torch.cat([s2_norm, s2_doy], dim=-1)
+        s1_final = torch.cat([s1_norm, s1_doy], dim=-1)
+        
+        return s2_final, s1_final
     
     if global_rank == 0:
         logging.info("Starting training loop...")
 
-    # === SIMPLE TRAINING LOOP ===
+    # === TRAINING LOOP WITH POST-NORMALIZATION ===
     model.train()
     total_loss = 0.0
     num_batches = 0
     
-    for epoch in range(1):  # Just one epoch for testing
+    # Mixed precision setup
+    use_amp = config.get('apply_amp', True)
+    scaler = torch.amp.GradScaler('cuda') if use_amp else None
+    
+    for epoch in range(config['epochs']):
         train_sampler.set_epoch(epoch)
         
         for batch_idx, batch in enumerate(dataloader):
-            if batch_idx >= 5:  # Only process 5 batches for testing
-                break
-                
-            s2_data = batch['s2'].to(device)
-            s1_data = batch['s1'].to(device)
+            # Move data to GPU
+            s2_raw = batch['s2_aug1'].to(device, non_blocking=True)
+            s1_raw = batch['s1_aug1'].to(device, non_blocking=True)
+            
+            # Apply post-normalization on GPU
+            s2_data, s1_data = normalize_batch_on_gpu(s2_raw, s1_raw)
             
             optimizer.zero_grad()
             
-            # Forward pass
-            z_s2, z_s1, repr_out = model(s2_data, s1_data)
-            loss = criterion(z_s2, z_s1)
-            
-            # Backward pass
-            loss.backward()
-            optimizer.step()
+            # Forward pass with mixed precision
+            if use_amp:
+                with torch.amp.autocast('cuda'):
+                    z_s2, z_s1, repr_out = model(s2_data, s1_data)
+                    loss = criterion(z_s2, z_s1)
+                
+                # Backward pass
+                scaler.scale(loss).backward()
+                
+                # Gradient clipping
+                if config.get('clip_grad_norm', 0) > 0:
+                    scaler.unscale_(optimizer)
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), config['clip_grad_norm'])
+                
+                scaler.step(optimizer)
+                scaler.update()
+            else:
+                z_s2, z_s1, repr_out = model(s2_data, s1_data)
+                loss = criterion(z_s2, z_s1)
+                
+                loss.backward()
+                
+                if config.get('clip_grad_norm', 0) > 0:
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), config['clip_grad_norm'])
+                
+                optimizer.step()
             
             total_loss += loss.item()
             num_batches += 1
             
-            if global_rank == 0 and batch_idx % 1 == 0:
-                logging.info(f"Batch {batch_idx}: Loss = {loss.item():.4f}")
+            if global_rank == 0 and batch_idx % config.get('log_interval_steps', 10) == 0:
+                logging.info(f"Epoch {epoch}, Batch {batch_idx}: Loss = {loss.item():.4f}, GPU Mem = {get_gpu_memory_usage():.1f}MB")
+            
+            # Learning rate scheduling
+            if batch_idx % 100 == 0:
+                adjust_learning_rate(
+                    optimizer, 
+                    epoch * len(dataloader) + batch_idx,
+                    config['learning_rate'],
+                    warmup_steps=int(config.get('warmup_ratio', 0.1) * len(dataloader)),
+                    total_steps=config['epochs'] * len(dataloader)
+                )
 
     if global_rank == 0:
         avg_loss = total_loss / num_batches if num_batches > 0 else 0.0

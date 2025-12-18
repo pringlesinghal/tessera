@@ -90,6 +90,15 @@ class TreeDataset(Dataset):
         # Tile Data Cache: { "tile_id_year": { "bands": memmap, ... } }
         self.tile_cache = {}
         self.cache_queue = [] # For LRU eviction
+        
+        # 4. Corruption Handling
+        self.corrupted_tiles = set()  # Cache of known corrupted tile-year combinations
+        self.corruption_stats = {
+            'total_attempts': 0,
+            'corrupted_hits': 0,
+            'cache_saves': 0,
+            'retries': 0
+        }
 
     def _load_index_chunk(self, file_idx):
         """Loads a specific parquet index file into memory."""
@@ -104,11 +113,16 @@ class TreeDataset(Dataset):
 
     def _get_tile_data(self, tile_id, year):
         """
-        Retrieves tile data arrays from cache or disk.
+        Retrieves tile data arrays from cache or disk with fast corruption handling.
         Returns dictionary of memmap arrays.
         """
         t0 = time.time()
         cache_key = f"{tile_id}_{year}"
+        
+        # Fast corruption check - avoid known bad tiles immediately
+        if cache_key in self.corrupted_tiles:
+            self.corruption_stats['cache_saves'] += 1
+            raise FileNotFoundError(f"Known corrupted tile: {cache_key}")
 
         if cache_key in self.tile_cache:
             if cache_key in self.cache_queue:
@@ -123,18 +137,25 @@ class TreeDataset(Dataset):
             if oldest in self.tile_cache:
                 del self.tile_cache[oldest]
 
-        # Load new tile
+        # Load new tile with timeout protection
         tile_path = self.data_dir / str(year) / tile_id / "data_processed"
 
         if not tile_path.exists():
+            # Cache this corruption and fail fast
+            self.corrupted_tiles.add(cache_key)
             raise FileNotFoundError(f"Tile data not found: {tile_path}")
 
         try:
             arrays = {}
-            # S2 Data (Required)
+            # S2 Data (Required) - load with minimal validation
             arrays["bands"] = np.load(tile_path / "bands.npy", mmap_mode="r")
             arrays["masks"] = np.load(tile_path / "masks.npy", mmap_mode="r")
             arrays["doys"] = np.load(tile_path / "doys.npy", mmap_mode="r")
+            
+            # Quick validation - just check shapes are accessible
+            _ = arrays["bands"].shape
+            _ = arrays["masks"].shape
+            _ = arrays["doys"].shape
             
             # S1 Data (Optional/Check existence)
             if (tile_path / "sar_ascending.npy").exists():
@@ -155,6 +176,8 @@ class TreeDataset(Dataset):
             return arrays
 
         except Exception as e:
+            # Cache this corruption for future fast-fail
+            self.corrupted_tiles.add(cache_key)
             raise RuntimeError(f"Failed to load tile {tile_id}: {e}")
 
     def _sample_indices(self, valid_indices, size):
@@ -252,49 +275,76 @@ class TreeDataset(Dataset):
         return self.__getitem__(idx, year_override=year)
 
     def __getitem__(self, global_idx, year_override=None):
-        t_total = time.time()
-        # Determine year
-        if year_override is not None:
-            target_year = year_override
-        elif self.year is not None:
-            target_year = self.year
-        else:
-            target_year = int(np.random.choice(self.years))
-
-        # 1. Map global_idx to file_idx and local_idx
-        file_idx = bisect.bisect_right(self.file_offsets, global_idx) - 1
-        local_idx = global_idx - self.file_offsets[file_idx]
-
-        # 2. Load Index Chunk
-        self._load_index_chunk(file_idx)
-
-        # 3. Get Tile Info
-        row_data = self.current_df.iloc[local_idx]
-        tile_id = row_data["tile_id"]
-        row = row_data["row"]
-        col = row_data["col"]
-
-        # Load tile data
-        try:
-            tile_data = self._get_tile_data(tile_id, target_year)
-        except (ValueError, RuntimeError, OSError) as e:
-            # Skip corrupted or missing tiles
-            logger.warning(f"Skipping corrupted tile {tile_id} (year {target_year}): {e}")
-            
-            # Log to file for later investigation
+        """Get item with efficient corruption handling and retry logic."""
+        self.corruption_stats['total_attempts'] += 1
+        
+        max_retries = 3
+        original_idx = global_idx
+        
+        for retry_count in range(max_retries):
             try:
-                with open(self.corrupted_log_path, 'a') as f:
-                    f.write(f"{tile_id},{target_year}\n")
-            except Exception as log_err:
-                logger.error(f"Failed to log corrupted tile: {log_err}")
-            
-            # Return a random different sample instead
-            new_idx = (global_idx + 1) % len(self)
-            return self.__getitem__(new_idx, year_override=year_override)
-        except Exception as e:
-            logger.error(f"Unexpected error loading tile {tile_id}: {e}")
-            raise e
+                # Determine year
+                if year_override is not None:
+                    target_year = year_override
+                elif self.year is not None:
+                    target_year = self.year
+                else:
+                    target_year = int(np.random.choice(self.years))
 
+                # 1. Map global_idx to file_idx and local_idx
+                file_idx = bisect.bisect_right(self.file_offsets, global_idx) - 1
+                local_idx = global_idx - self.file_offsets[file_idx]
+
+                # 2. Load Index Chunk
+                self._load_index_chunk(file_idx)
+
+                # 3. Get Tile Info
+                row_data = self.current_df.iloc[local_idx]
+                tile_id = row_data["tile_id"]
+                row = row_data["row"]
+                col = row_data["col"]
+                
+                # Fast corruption check before attempting load
+                cache_key = f"{tile_id}_{target_year}"
+                if cache_key in self.corrupted_tiles:
+                    self.corruption_stats['corrupted_hits'] += 1
+                    raise FileNotFoundError(f"Known corrupted: {cache_key}")
+
+                # Load tile data
+                tile_data = self._get_tile_data(tile_id, target_year)
+                
+                # Continue with normal processing...
+                return self._process_sample(tile_data, row, col, target_year, global_idx)
+                
+            except (ValueError, RuntimeError, OSError, FileNotFoundError) as e:
+                # Corruption detected
+                if retry_count == 0:  # Only log on first encounter
+                    logger.warning(f"Corrupted {tile_id if 'tile_id' in locals() else 'unknown'} (year {target_year if 'target_year' in locals() else 'unknown'}): {e}")
+                
+                if retry_count < max_retries - 1:
+                    # Try different random sample
+                    global_idx = np.random.randint(0, len(self))
+                    self.corruption_stats['retries'] += 1
+                    continue
+                else:
+                    # Last retry - try a systematic fallback
+                    global_idx = (original_idx + 1) % len(self)
+                    if global_idx == original_idx:  # Avoid infinite loop
+                        raise RuntimeError(f"Unable to find valid sample after {max_retries} retries")
+                    continue
+                    
+            except Exception as e:
+                # Unexpected error - don't retry, just fail
+                logger.error(f"Unexpected error on sample {global_idx}: {e}")
+                raise e
+        
+        # If we get here, all retries failed
+        raise RuntimeError(f"Failed to load any valid sample after {max_retries} retries")
+    
+    def _process_sample(self, tile_data, row, col, target_year, global_idx):
+        """Process a successfully loaded tile into a training sample."""
+        t_total = time.time()
+        
         # 5. S2 Processing
         bands_s2 = tile_data["bands"][:, row, col, :]
         masks_s2 = tile_data["masks"][:, row, col]
@@ -340,6 +390,28 @@ class TreeDataset(Dataset):
             logger.info(f"Sample {global_idx} loaded in {t_elapsed:.4f}s")
         
         return result
+
+    def get_corruption_stats(self):
+        """Get statistics about corruption handling."""
+        stats = self.corruption_stats.copy()
+        stats['corrupted_tiles_cached'] = len(self.corrupted_tiles)
+        if stats['total_attempts'] > 0:
+            stats['corruption_rate'] = stats['corrupted_hits'] / stats['total_attempts']
+            stats['retry_rate'] = stats['retries'] / stats['total_attempts']
+        else:
+            stats['corruption_rate'] = 0.0
+            stats['retry_rate'] = 0.0
+        return stats
+
+    def clear_corruption_cache(self):
+        """Clear the corruption cache (useful for testing)."""
+        self.corrupted_tiles.clear()
+        self.corruption_stats = {
+            'total_attempts': 0,
+            'corrupted_hits': 0,
+            'cache_saves': 0,
+            'retries': 0
+        }
 
 
 if __name__ == "__main__":

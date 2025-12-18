@@ -577,7 +577,7 @@ def main():
         "sync_module_states": True,
         "forward_prefetch": True,
         "backward_prefetch": BackwardPrefetch.BACKWARD_PRE,
-        "cpu_offload": CPUOffload(offload_params=False),
+        "cpu_offload": CPUOffload(offload_params=True),
         "use_orig_params": True,
     }
     if mixed_precision_policy:
@@ -794,13 +794,57 @@ def main():
 
         logging.info("Just before entering training loop")
 
+        # Post-normalization parameters (on GPU for efficiency)
+        s2_mean = torch.tensor([
+            1353.3418, 1265.4015, 1269.009, 1976.1317,
+            2581.0518, 3238.1504, 3546.2078, 3459.1382,
+            3906.4131, 1535.5925
+        ], device=device, dtype=torch.float32).view(1, 1, -1)
+        
+        s2_std = torch.tensor([
+            242.07303, 290.84450, 402.9476, 516.77747,
+            729.89056, 928.1345, 896.01056, 896.4886,
+            1111.1157, 234.4575
+        ], device=device, dtype=torch.float32).view(1, 1, -1)
+        
+        s1_mean = torch.tensor([-9.205532, -16.072447], device=device, dtype=torch.float32).view(1, 1, -1)
+        s1_std = torch.tensor([2.3895948, 4.153361], device=device, dtype=torch.float32).view(1, 1, -1)
+        
+        def apply_post_normalization(s2_raw, s1_raw):
+            """Apply post-normalization on GPU for efficiency"""
+            if config.get("normalize", True):
+                # Already normalized in dataset
+                return s2_raw, s1_raw
+            
+            # Extract bands (exclude DOY which is last channel)
+            s2_bands = s2_raw[:, :, :-1]  # [batch, time, 10]
+            s2_doy = s2_raw[:, :, -1:]    # [batch, time, 1] 
+            
+            s1_bands = s1_raw[:, :, :-1]  # [batch, time, 2]
+            s1_doy = s1_raw[:, :, -1:]    # [batch, time, 1]
+            
+            # Normalize bands
+            s2_norm = (s2_bands - s2_mean) / s2_std
+            s1_norm = (s1_bands - s1_mean) / s1_std
+            
+            # Concatenate back with DOY
+            s2_final = torch.cat([s2_norm, s2_doy], dim=-1)
+            s1_final = torch.cat([s1_norm, s1_doy], dim=-1)
+            
+            return s2_final, s1_final
+
         # Main training loop (no gradient accumulation)
         for batch_data in train_loader:
-            s2_aug1 = batch_data["s2_aug1"].to(device, non_blocking=True)
-            s2_aug2 = batch_data["s2_aug2"].to(device, non_blocking=True)
-            s1_aug1 = batch_data["s1_aug1"].to(device, non_blocking=True)
-            s1_aug2 = batch_data["s1_aug2"].to(device, non_blocking=True)
-            logging.info("Batch loaded")
+            s2_aug1_raw = batch_data["s2_aug1"].to(device, non_blocking=True)
+            s2_aug2_raw = batch_data["s2_aug2"].to(device, non_blocking=True)
+            s1_aug1_raw = batch_data["s1_aug1"].to(device, non_blocking=True)
+            s1_aug2_raw = batch_data["s1_aug2"].to(device, non_blocking=True)
+            
+            # Apply post-normalization on GPU for efficiency
+            s2_aug1, s1_aug1 = apply_post_normalization(s2_aug1_raw, s1_aug1_raw)
+            s2_aug2, s1_aug2 = apply_post_normalization(s2_aug2_raw, s1_aug2_raw)
+            
+            logging.info("Batch loaded and post-normalized")
 
             # Compute FLOPs for a single forward pass (only once)
             if not flops_computed_once and FlopCountAnalysis is not None:
