@@ -1,0 +1,65 @@
+[2025-12-20T04:45:58Z INFO  s1_stack] Starting s1_stack with 16 parallel processes...
+[2025-12-20T04:45:58Z INFO  s1_stack] Input dir: "/scratch/users/psinghal/time_series/2024/zone32643_r29_c2_sr3_sc4/data_sar_raw"
+[2025-12-20T04:45:58Z INFO  s1_stack] Output dir: "/scratch/users/psinghal/time_series/2024/zone32643_r29_c2_sr3_sc4/data_processed"
+[2025-12-20T04:45:58Z INFO  s1_stack] Downsampling rate: 1
+[2025-12-20T04:45:58Z INFO  s1_stack] Initialized thread pool with 16 threads
+[2025-12-20T04:45:58Z INFO  s1_stack] Searching for TIFF files in input directory...
+[2025-12-20T04:45:58Z INFO  s1_stack] Searching for TIFF files with pattern: /scratch/users/psinghal/time_series/2024/zone32643_r29_c2_sr3_sc4/data_sar_raw/*.tiff
+[2025-12-20T04:45:58Z INFO  s1_stack] Found 160 potential TIFF files
+[2025-12-20T04:45:58Z INFO  s1_stack] Processed 100 files so far
+[2025-12-20T04:45:58Z INFO  s1_stack] Successfully processed 160 valid TIFF files
+[2025-12-20T04:45:58Z INFO  s1_stack] Found 160 TIFF files
+[2025-12-20T04:45:58Z INFO  s1_stack] Reading dimensions from: "/scratch/users/psinghal/time_series/2024/zone32643_r29_c2_sr3_sc4/data_sar_raw/2024-01-01_vv_descending.tiff"
+[2025-12-20T04:45:58Z INFO  s1_stack] Got dimensions from "/scratch/users/psinghal/time_series/2024/zone32643_r29_c2_sr3_sc4/data_sar_raw/2024-01-01_vv_descending.tiff"
+[2025-12-20T04:45:58Z INFO  s1_stack] Original TIFF dimensions before downsampling: height=2000, width=2000
+[2025-12-20T04:45:58Z INFO  s1_stack] Downsampled TIFF dimensions: height=2000, width=2000, bands=1
+[2025-12-20T04:45:58Z INFO  s1_stack] Grouped files: 26 ascending dates, 54 descending dates
+[2025-12-20T04:45:58Z INFO  s1_stack] Processing 26 ascending orbit dates...
+[2025-12-20T04:45:58Z INFO  s1_stack] Processing 54 descending orbit dates...
+[2025-12-20T04:45:58Z INFO  s1_stack] Split processing into 6 chunks
+[2025-12-20T04:45:58Z INFO  s1_stack] Split processing into 11 chunks
+[2025-12-20T04:45:58Z INFO  s1_stack] Processing chunk 2/6 with 5 pairs
+[2025-12-20T04:45:58Z INFO  s1_stack] Processing chunk 5/6 with 5 pairs
+[2025-12-20T04:45:58Z INFO  s1_stack] Processing chunk 1/6 with 5 pairs
+[2025-12-20T04:45:58Z INFO  s1_stack] Processing chunk 3/6 with 5 pairs
+[2025-12-20T04:45:58Z INFO  s1_stack] Processing chunk 4/6 with 5 pairs
+[2025-12-20T04:45:58Z INFO  s1_stack] Processing chunk 3/11 with 5 pairs
+[2025-12-20T04:45:58Z INFO  s1_stack] Processing chunk 4/11 with 5 pairs
+[2025-12-20T04:45:58Z INFO  s1_stack] Processing chunk 6/11 with 5 pairs
+[2025-12-20T04:45:58Z INFO  s1_stack] Processing chunk 5/11 with 5 pairs
+[2025-12-20T04:45:58Z INFO  s1_stack] Processing chunk 7/11 with 5 pairs
+[2025-12-20T04:45:58Z INFO  s1_stack] Processing chunk 11/11 with 4 pairs
+[2025-12-20T04:45:58Z INFO  s1_stack] Processing chunk 8/11 with 5 pairs
+[2025-12-20T04:45:58Z INFO  s1_stack] Processing chunk 2/11 with 5 pairs
+[2025-12-20T04:45:58Z INFO  s1_stack] Processing chunk 1/11 with 5 pairs
+[2025-12-20T04:45:58Z INFO  s1_stack] Processing chunk 9/11 with 5 pairs
+[2025-12-20T04:45:58Z INFO  s1_stack] Processing chunk 6/6 with 1 pairs
+[2025-12-20T04:45:58Z INFO  s1_stack] Processing chunk 10/11 with 5 pairs
+[2025-12-20T04:45:59Z INFO  s1_stack] Successfully processed 26 out of 26 pairs for ascending orbit
+[2025-12-20T04:45:59Z INFO  s1_stack] Successfully processed 54 out of 54 pairs for descending orbit
+[2025-12-20T04:45:59Z INFO  s1_stack] Created data file: "/scratch/users/psinghal/time_series/2024/zone32643_r29_c2_sr3_sc4/data_processed/sar_ascending.npy"
+[2025-12-20T04:45:59Z INFO  s1_stack] Created DOY file: "/scratch/users/psinghal/time_series/2024/zone32643_r29_c2_sr3_sc4/data_processed/sar_ascending_doy.npy"
+[2025-12-20T04:45:59Z INFO  s1_stack] Completed processing ascending orbit files
+[2025-12-20T04:46:00Z INFO  s1_stack] Created data file: "/scratch/users/psinghal/time_series/2024/zone32643_r29_c2_sr3_sc4/data_processed/sar_descending.npy"
+[2025-12-20T04:46:00Z INFO  s1_stack] Created DOY file: "/scratch/users/psinghal/time_series/2024/zone32643_r29_c2_sr3_sc4/data_processed/sar_descending_doy.npy"
+[2025-12-20T04:46:00Z INFO  s1_stack] Completed processing descending orbit files
+[2025-12-20T04:46:00Z INFO  s1_stack] All done! Output in "/scratch/users/psinghal/time_series/2024/zone32643_r29_c2_sr3_sc4/data_processed"
+[2025-12-20T04:46:00Z INFO  process_tile_downstream_wo_json] Starting process_tile_downstream_wo_json with optimized parallel processing...
+[2025-12-20T04:46:00Z INFO  process_tile_downstream_wo_json] Input dir: "/scratch/users/psinghal/time_series/2024/zone32643_r29_c2_sr3_sc4/data_raw"
+[2025-12-20T04:46:00Z INFO  process_tile_downstream_wo_json] Output dir: "/scratch/users/psinghal/time_series/2024/zone32643_r29_c2_sr3_sc4/data_processed"
+[2025-12-20T04:46:00Z INFO  process_tile_downstream_wo_json] Sample rate: 1
+[2025-12-20T04:46:00Z INFO  process_tile_downstream_wo_json] Num threads: 16
+[2025-12-20T04:46:00Z INFO  process_tile_downstream_wo_json] Batch size: 16
+[2025-12-20T04:46:00Z INFO  process_tile_downstream_wo_json] Cache level: 1
+[2025-12-20T04:46:00Z INFO  process_tile_downstream_wo_json] Cache settings - Band cache: true, Full prefetch: false
+[2025-12-20T04:46:00Z INFO  process_tile_downstream_wo_json] Looking for sample TIFF with pattern: /scratch/users/psinghal/time_series/2024/zone32643_r29_c2_sr3_sc4/data_raw/red/*.tiff
+[2025-12-20T04:46:00Z INFO  process_tile_downstream_wo_json] Detected full resolution: height = 2000, width = 2000
+[2025-12-20T04:46:00Z INFO  process_tile_downstream_wo_json] Scanning for TIFF files with pattern: /scratch/users/psinghal/time_series/2024/zone32643_r29_c2_sr3_sc4/data_raw/red/*.tiff
+[2025-12-20T04:46:00Z INFO  process_tile_downstream_wo_json] Found 119 TIFF files in red directory
+[2025-12-20T04:46:00Z INFO  process_tile_downstream_wo_json] Found 119 valid time slices to process
+[2025-12-20T04:46:00Z INFO  process_tile_downstream_wo_json] Processing 119 time slices in 8 batches of size 16
+[2025-12-20T04:46:13Z INFO  process_tile_downstream_wo_json] Successfully processed 119 out of 119 time slices
+[2025-12-20T04:46:13Z INFO  process_tile_downstream_wo_json] Created output bands file: "/scratch/users/psinghal/time_series/2024/zone32643_r29_c2_sr3_sc4/data_processed/bands.npy" with shape [119, 2000, 2000, 10]
+[2025-12-20T04:46:13Z INFO  process_tile_downstream_wo_json] Created output masks file: "/scratch/users/psinghal/time_series/2024/zone32643_r29_c2_sr3_sc4/data_processed/masks.npy" with shape [119, 2000, 2000]
+[2025-12-20T04:46:27Z INFO  process_tile_downstream_wo_json] All done! Processing completed in 27.12 seconds
+[2025-12-20T04:46:27Z INFO  process_tile_downstream_wo_json] Output in "/scratch/users/psinghal/time_series/2024/zone32643_r29_c2_sr3_sc4/data_processed"
