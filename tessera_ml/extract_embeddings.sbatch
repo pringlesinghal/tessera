@@ -17,6 +17,7 @@ set -euo pipefail
 CHECKPOINT_PATH="${1:-/scratch/groups/dlobell/psinghal/sentineldownloader/tessera_best_model_fsdp_20250427_084307.pt}"
 OUTPUT_DIR="${2:-curation_outputs}"
 CONTAINER_IMAGE="/scratch/groups/dlobell/psinghal/sentineldownloader/tessera/ml_env.sif"
+NUM_GPUS=8
 
 # Change to the tessera_ml directory
 cd /scratch/groups/dlobell/psinghal/sentineldownloader/tessera/tessera_ml
@@ -28,6 +29,7 @@ echo "Node: $SLURM_NODELIST"
 echo "Working directory: $WORK_DIR"
 echo "Checkpoint: $CHECKPOINT_PATH"
 echo "Output directory: $OUTPUT_DIR"
+echo "Number of GPUs: $NUM_GPUS"
 echo "Container: $CONTAINER_IMAGE"
 echo "========================================"
 
@@ -45,6 +47,16 @@ export PYTHONPATH="$PARENT_DIR:$WORK_DIR${PYTHONPATH:+:$PYTHONPATH}"
 echo "Bind paths: $BIND_PATHS"
 echo "PYTHONPATH: $PYTHONPATH"
 
+# NCCL environment variables for single-node multi-GPU (matches training script)
+export NCCL_DEBUG=INFO
+export NCCL_IB_DISABLE=1
+export NCCL_P2P_LEVEL=NVL
+export NCCL_SOCKET_IFNAME=^docker0,lo
+export NCCL_IGNORE_DISABLED_P2P=1
+export NCCL_NET="Socket"
+export NCCL_NSOCKS_PERTHREAD=4
+export NCCL_SOCKET_NTHREADS=4
+
 # Memory optimization
 export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
 
@@ -53,19 +65,19 @@ export OMP_NUM_THREADS=4
 export MKL_NUM_THREADS=4
 
 echo "========================================"
-echo "Starting embedding extraction..."
+echo "Starting embedding extraction with torchrun ($NUM_GPUS GPUs)..."
 echo "========================================"
 
-# Check if this is a resumed job (checkpoint exists)
+# Check if this is a resumed job (per-rank checkpoints)
 RESUME_FLAG=""
-if [ -f "$OUTPUT_DIR/extraction_checkpoint.json" ]; then
-    echo "Found checkpoint file, enabling resume mode"
+if [ -f "$OUTPUT_DIR/extraction_checkpoint_rank0.json" ]; then
+    echo "Found per-rank checkpoint files, enabling resume mode"
     RESUME_FLAG="--resume"
 fi
 
-# Run extraction script
-# batch_size 1024 is per-GPU, effective batch = 1024 * 8 = 8192
-# num_workers 16 for good CPU utilization with 32 CPUs
+# Run extraction with torchrun (one process per GPU)
+# Each process gets: batch_size=512, num_workers=2, cache_size=100
+# Total effective: batch_size=4096, workers=16, cache=800
 apptainer exec --nv \
     --bind "$BIND_PATHS" \
     --pwd "$WORK_DIR" \
@@ -73,13 +85,23 @@ apptainer exec --nv \
     --env PYTORCH_CUDA_ALLOC_CONF="$PYTORCH_CUDA_ALLOC_CONF" \
     --env OMP_NUM_THREADS="$OMP_NUM_THREADS" \
     --env MKL_NUM_THREADS="$MKL_NUM_THREADS" \
+    --env NCCL_DEBUG="$NCCL_DEBUG" \
+    --env NCCL_IB_DISABLE="$NCCL_IB_DISABLE" \
+    --env NCCL_P2P_LEVEL="$NCCL_P2P_LEVEL" \
+    --env NCCL_SOCKET_IFNAME="$NCCL_SOCKET_IFNAME" \
+    --env NCCL_IGNORE_DISABLED_P2P="$NCCL_IGNORE_DISABLED_P2P" \
+    --env NCCL_NET="$NCCL_NET" \
+    --env NCCL_NSOCKS_PERTHREAD="$NCCL_NSOCKS_PERTHREAD" \
+    --env NCCL_SOCKET_NTHREADS="$NCCL_SOCKET_NTHREADS" \
     "$CONTAINER_IMAGE" \
-    python "$WORK_DIR/scripts/extract_embeddings.py" \
+    torchrun \
+        --standalone \
+        --nproc_per_node=$NUM_GPUS \
+        "$WORK_DIR/scripts/extract_embeddings.py" \
         --checkpoint "$CHECKPOINT_PATH" \
         --output_dir "$OUTPUT_DIR" \
         --batch_size 512 \
-        --num_workers 16 \
-        --device cuda \
+        --num_workers 2 \
         --checkpoint_interval 5000 \
         --max_samples 50000000 \
         $RESUME_FLAG
